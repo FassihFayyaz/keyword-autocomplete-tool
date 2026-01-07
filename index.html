@@ -1049,6 +1049,9 @@
                         <div class="status-item" id="currentQueryStatus" style="display: none;">
                             Processing: <strong id="currentQuery">-</strong>
                         </div>
+                        <div class="status-item" id="retryStatus" style="display: none;">
+                            Retries: <strong id="retryCount">0</strong>
+                        </div>
                     </div>
                 </div>
 
@@ -1245,6 +1248,7 @@
             document.getElementById('progressContainer').classList.add('active');
             document.getElementById('statusIndicator').classList.add('active');
             document.getElementById('currentQueryStatus').style.display = 'flex';
+            document.getElementById('retryStatus').style.display = 'flex';
             document.getElementById('emptyState').style.display = 'none';
             document.getElementById('resultsBody').innerHTML = '';
 
@@ -1256,6 +1260,7 @@
             document.getElementById('statQueries').textContent = '0';
             document.getElementById('statFound').textContent = '0';
             document.getElementById('statRemaining').textContent = '0';
+            document.getElementById('retryCount').textContent = '0';
 
             // Show active modifiers and workers
             const modifiers = getModifiers();
@@ -1363,6 +1368,11 @@
                     document.getElementById('statFound').textContent = data.found;
                     document.getElementById('statRemaining').textContent = remaining;
 
+                    // Update retry count if available
+                    if (data.total_retries !== undefined) {
+                        document.getElementById('retryCount').textContent = data.total_retries;
+                    }
+
                     // Update progress text
                     document.getElementById('progressText').textContent =
                         `Processing "${data.seed}": query ${data.current}/${data.total}`;
@@ -1420,6 +1430,7 @@
             document.getElementById('startBtn').textContent = 'Start Harvesting';
             document.getElementById('statusIndicator').classList.remove('active');
             document.getElementById('currentQueryStatus').style.display = 'none';
+            document.getElementById('retryStatus').style.display = 'none';
         }
 
         function renderTable(keywords) {

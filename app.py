@@ -114,87 +114,138 @@ class KeywordHarvester:
             'questions': ['how to', 'what is', 'why', 'where', 'can', 'does', 'will']
         }
 
-    def fetch_suggestions_google(self, query: str) -> List[str]:
-        """Fetch suggestions from Google Autocomplete API (free)."""
-        try:
-            params = {
-                'client': 'chrome',
-                'q': query,
-                'hl': 'en'
-            }
-            # Get proxy configuration based on use_proxy setting
-            proxies = get_proxies(self.use_proxy)
+    def fetch_suggestions_google(self, query: str, max_retries: int = 20, timeout: int = 60) -> tuple:
+        """
+        Fetch suggestions from Google Autocomplete API (free) with retry mechanism.
 
-            response = requests.get(
-                GOOGLE_SUGGEST_URL,
-                params=params,
-                proxies=proxies if proxies else None,
-                timeout=10
-            )
-            if response.status_code == 200:
-                data = response.json()
-                if len(data) > 1 and isinstance(data[1], list):
-                    return data[1]
-        except Exception as e:
-            print(f"Error fetching Google suggestions for '{query}': {e}")
-        return []
+        Returns:
+            tuple: (suggestions_list, retry_count, success)
+        """
+        import time as time_module
 
-    def fetch_suggestions_dataforseo(self, query: str) -> List[str]:
-        """Fetch suggestions from DataForSEO API (paid, more reliable)."""
+        for attempt in range(max_retries):
+            try:
+                params = {
+                    'client': 'chrome',
+                    'q': query,
+                    'hl': 'en'
+                }
+                # Get proxy configuration based on use_proxy setting
+                proxies = get_proxies(self.use_proxy)
+
+                response = requests.get(
+                    GOOGLE_SUGGEST_URL,
+                    params=params,
+                    proxies=proxies if proxies else None,
+                    timeout=timeout
+                )
+                if response.status_code == 200:
+                    data = response.json()
+                    if len(data) > 1 and isinstance(data[1], list):
+                        return data[1], attempt, True
+            except requests.exceptions.Timeout:
+                print(f"Timeout (attempt {attempt + 1}/{max_retries}) fetching Google suggestions for '{query}'")
+                if attempt < max_retries - 1:
+                    # Exponential backoff: 2^attempt seconds, max 30 seconds
+                    backoff = min(2 ** attempt, 30)
+                    time_module.sleep(backoff)
+            except requests.exceptions.RequestException as e:
+                print(f"Request error (attempt {attempt + 1}/{max_retries}) for '{query}': {e}")
+                if attempt < max_retries - 1:
+                    backoff = min(2 ** attempt, 30)
+                    time_module.sleep(backoff)
+            except Exception as e:
+                print(f"Unexpected error (attempt {attempt + 1}/{max_retries}) for '{query}': {e}")
+                if attempt < max_retries - 1:
+                    backoff = min(2 ** attempt, 30)
+                    time_module.sleep(backoff)
+
+        print(f"Failed to fetch suggestions for '{query}' after {max_retries} attempts")
+        return [], max_retries, False
+
+    def fetch_suggestions_dataforseo(self, query: str, max_retries: int = 20, timeout: int = 60) -> tuple:
+        """
+        Fetch suggestions from DataForSEO API (paid, more reliable) with retry mechanism.
+
+        Returns:
+            tuple: (suggestions_list, retry_count, success)
+        """
         import base64
+        import time as time_module
 
         if not DATAFORSEO_API_LOGIN or not DATAFORSEO_API_PASSWORD:
             print("DataForSEO credentials not configured in .env file")
-            return []
+            return [], 0, False
 
-        try:
-            # Encode credentials to Base64 for Basic Authentication
-            credentials = f"{DATAFORSEO_API_LOGIN}:{DATAFORSEO_API_PASSWORD}"
-            encoded_credentials = base64.b64encode(credentials.encode()).decode()
+        for attempt in range(max_retries):
+            try:
+                # Encode credentials to Base64 for Basic Authentication
+                credentials = f"{DATAFORSEO_API_LOGIN}:{DATAFORSEO_API_PASSWORD}"
+                encoded_credentials = base64.b64encode(credentials.encode()).decode()
 
-            headers = {
-                'Authorization': f'Basic {encoded_credentials}',
-                'Content-Type': 'application/json'
-            }
-            payload = [{
-                'keyword': query,
-                'language_name': 'English',
-                'location_code': 2840  # United States
-            }]
-            response = requests.post(
-                f"{DATAFORSEO_API_URL}/task_post",
-                headers=headers,
-                json=payload,
-                timeout=30
-            )
-            if response.status_code in [200, 201]:
-                data = response.json()
-                if data.get('tasks') and len(data['tasks']) > 0:
-                    task_id = data['tasks'][0].get('id')
-                    if task_id:
-                        # Get the results
-                        time.sleep(2)  # Wait for task to complete
-                        get_response = requests.get(
-                            f"{DATAFORSEO_API_URL}/task_get/{task_id}",
-                            headers=headers,
-                            timeout=30
-                        )
-                        if get_response.status_code == 200:
-                            result_data = get_response.json()
-                            if result_data.get('tasks') and len(result_data['tasks']) > 0:
-                                task = result_data['tasks'][0]
-                                if task.get('status_code') == 20000:
-                                    return task.get('result', [{}])[0].get('items', [])
-        except Exception as e:
-            print(f"Error fetching DataForSEO suggestions for '{query}': {e}")
-        return []
+                headers = {
+                    'Authorization': f'Basic {encoded_credentials}',
+                    'Content-Type': 'application/json'
+                }
+                payload = [{
+                    'keyword': query,
+                    'language_name': 'English',
+                    'location_code': 2840  # United States
+                }]
+                response = requests.post(
+                    f"{DATAFORSEO_API_URL}/task_post",
+                    headers=headers,
+                    json=payload,
+                    timeout=timeout
+                )
+                if response.status_code in [200, 201]:
+                    data = response.json()
+                    if data.get('tasks') and len(data['tasks']) > 0:
+                        task_id = data['tasks'][0].get('id')
+                        if task_id:
+                            # Get the results
+                            time_module.sleep(2)  # Wait for task to complete
+                            get_response = requests.get(
+                                f"{DATAFORSEO_API_URL}/task_get/{task_id}",
+                                headers=headers,
+                                timeout=timeout
+                            )
+                            if get_response.status_code == 200:
+                                result_data = get_response.json()
+                                if result_data.get('tasks') and len(result_data['tasks']) > 0:
+                                    task = result_data['tasks'][0]
+                                    if task.get('status_code') == 20000:
+                                        items = task.get('result', [{}])[0].get('items', [])
+                                        keywords = [item.get('keyword', '') for item in items if item.get('keyword')]
+                                        return keywords, attempt, True
+            except requests.exceptions.Timeout:
+                print(f"Timeout (attempt {attempt + 1}/{max_retries}) fetching DataForSEO suggestions for '{query}'")
+                if attempt < max_retries - 1:
+                    backoff = min(2 ** attempt, 30)
+                    time_module.sleep(backoff)
+            except requests.exceptions.RequestException as e:
+                print(f"Request error (attempt {attempt + 1}/{max_retries}) for '{query}': {e}")
+                if attempt < max_retries - 1:
+                    backoff = min(2 ** attempt, 30)
+                    time_module.sleep(backoff)
+            except Exception as e:
+                print(f"Unexpected error (attempt {attempt + 1}/{max_retries}) for '{query}': {e}")
+                if attempt < max_retries - 1:
+                    backoff = min(2 ** attempt, 30)
+                    time_module.sleep(backoff)
 
-    def fetch_suggestions(self, query: str, **kwargs) -> List[str]:
-        """Fetch suggestions from the selected API source."""
+        print(f"Failed to fetch DataForSEO suggestions for '{query}' after {max_retries} attempts")
+        return [], max_retries, False
+
+    def fetch_suggestions(self, query: str, **kwargs) -> tuple:
+        """
+        Fetch suggestions from the selected API source with retry mechanism.
+
+        Returns:
+            tuple: (suggestions_list, retry_count, success)
+        """
         if self.api_source == 'dataforseo':
-            raw_results = self.fetch_suggestions_dataforseo(query)
-            # Extract keywords from DataForSEO response
-            return [item.get('keyword', '') for item in raw_results if item.get('keyword')]
+            return self.fetch_suggestions_dataforseo(query)
         return self.fetch_suggestions_google(query)
 
     def generate_queries(self, seed: str, selected_modifiers: Dict[str, bool]) -> List[str]:
@@ -401,7 +452,7 @@ def index():
 def process_single_query(harvester_instance, query, seed, seen_keywords, results_lock):
     """Process a single query and return results (thread-safe)."""
     try:
-        suggestions = harvester_instance.fetch_suggestions(query)
+        suggestions, retry_count, success = harvester_instance.fetch_suggestions(query)
         new_keywords = []
 
         with results_lock:
@@ -419,17 +470,19 @@ def process_single_query(harvester_instance, query, seed, seen_keywords, results
                     new_keywords.append(keyword_data)
 
         return {
-            'success': True,
+            'success': success,
             'query': query,
             'seed': seed,
-            'keywords': new_keywords
+            'keywords': new_keywords,
+            'retries': retry_count
         }
     except Exception as e:
         return {
             'success': False,
             'query': query,
             'seed': seed,
-            'error': str(e)
+            'error': str(e),
+            'retries': 0
         }
 
 
@@ -481,12 +534,18 @@ def generate_sse(harvester_instance, seeds: List[str], modifiers: Dict[str, bool
 
             # Process results as they complete
             seed_keyword_counts = {}  # Track keywords per seed
+            total_retries = {'value': 0}  # Track total retries
+            retry_lock = threading.Lock()
 
             for future in as_completed(future_to_query):
                 query, seed, seed_idx = future_to_query[future]
 
                 try:
                     result = future.result(timeout=60)  # 60 second timeout per query
+
+                    # Track retries
+                    with retry_lock:
+                        total_retries['value'] += result.get('retries', 0)
 
                     with count_lock:
                         completed_count['value'] += 1
@@ -501,7 +560,9 @@ def generate_sse(harvester_instance, seeds: List[str], modifiers: Dict[str, bool
                         'query': query,
                         'seed': seed,
                         'seed_index': seed_idx,
-                        'total_seeds': len(seeds)
+                        'total_seeds': len(seeds),
+                        'retries': result.get('retries', 0),
+                        'total_retries': total_retries['value']
                     }
                     yield f"data: {json.dumps(progress_data)}\n\n"
                     sys.stdout.flush()
@@ -520,7 +581,8 @@ def generate_sse(harvester_instance, seeds: List[str], modifiers: Dict[str, bool
                             'keywords': result['keywords'],
                             'found': len(all_results),
                             'query': query,
-                            'seed': seed
+                            'seed': seed,
+                            'retries': result.get('retries', 0)
                         }
                         yield f"data: {json.dumps(keywords_data)}\n\n"
                         sys.stdout.flush()

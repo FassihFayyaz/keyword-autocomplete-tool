@@ -490,6 +490,11 @@
             border: 1px solid #3f3f46;
             border-radius: 8px;
             padding: 16px;
+            transition: border-color 0.2s;
+        }
+
+        .library-item.editing {
+            border-color: #60a5fa;
         }
 
         .library-item-header {
@@ -504,6 +509,26 @@
             color: #e4e4e7;
         }
 
+        .library-item-name.editing {
+            display: none;
+        }
+
+        .library-item-name-input {
+            display: none;
+            font-size: 1rem;
+            font-weight: 600;
+            padding: 4px 8px;
+            background: #18181b;
+            border: 1px solid #60a5fa;
+            border-radius: 4px;
+            color: #e4e4e7;
+            min-width: 200px;
+        }
+
+        .library-item-name-input.editing {
+            display: inline-block;
+        }
+
         .library-item-count {
             font-size: 0.85rem;
             color: #71717a;
@@ -513,6 +538,87 @@
             font-size: 0.85rem;
             color: #a1a1aa;
             line-height: 1.5;
+        }
+
+        .library-item-words-text {
+            display: block;
+        }
+
+        .library-item-words-textarea {
+            display: none;
+            width: 100%;
+            min-height: 80px;
+            padding: 8px;
+            background: #27272a;
+            border: 1px solid #3f3f46;
+            border-radius: 6px;
+            color: #e4e4e7;
+            font-family: inherit;
+            font-size: 0.85rem;
+            resize: vertical;
+            margin-top: 8px;
+        }
+
+        .library-item-words-textarea.editing {
+            display: block;
+        }
+
+        .library-item-actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .library-item-actions.editing {
+            display: none;
+        }
+
+        .library-item-edit-actions {
+            display: none;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .library-item-edit-actions.editing {
+            display: flex;
+        }
+
+        .btn-edit-lib,
+        .btn-save-lib,
+        .btn-cancel-lib {
+            padding: 4px 10px;
+            font-size: 0.8rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-edit-lib {
+            background: #3f3f46;
+            color: #e4e4e7;
+        }
+
+        .btn-edit-lib:hover {
+            background: #52525b;
+        }
+
+        .btn-save-lib {
+            background: #22c55e;
+            color: white;
+        }
+
+        .btn-save-lib:hover {
+            background: #16a34a;
+        }
+
+        .btn-cancel-lib {
+            background: #6b7280;
+            color: white;
+        }
+
+        .btn-cancel-lib:hover {
+            background: #4b5563;
         }
 
         .btn-delete-lib {
@@ -1856,15 +1962,28 @@
                 const words = libraries[name];
                 const item = document.createElement('div');
                 item.className = 'library-item';
+                item.dataset.libraryName = name;
+
                 item.innerHTML = `
                     <div class="library-item-header">
                         <div>
                             <span class="library-item-name">${escapeHtml(name)}</span>
+                            <input type="text" class="library-item-name-input" value="${escapeHtml(name)}" data-original-name="${escapeHtml(name)}">
                             <span class="library-item-count">(${words.length} words)</span>
                         </div>
-                        <button class="btn-delete-lib" onclick="deleteLibrary('${escapeHtml(name)}')">Delete</button>
+                        <div class="library-item-actions">
+                            <button class="btn-edit-lib" onclick="editLibrary('${escapeHtml(name)}')">Edit</button>
+                            <button class="btn-delete-lib" onclick="deleteLibrary('${escapeHtml(name)}')">Delete</button>
+                        </div>
+                        <div class="library-item-edit-actions">
+                            <button class="btn-save-lib" onclick="saveLibraryEdit('${escapeHtml(name)}')">Save</button>
+                            <button class="btn-cancel-lib" onclick="cancelLibraryEdit('${escapeHtml(name)}')">Cancel</button>
+                        </div>
                     </div>
-                    <div class="library-item-words">${escapeHtml(words.slice(0, 10).join(', '))}${words.length > 10 ? '...' : ''}</div>
+                    <div class="library-item-words">
+                        <span class="library-item-words-text">${escapeHtml(words.slice(0, 10).join(', '))}${words.length > 10 ? '...' : ''}</span>
+                        <textarea class="library-item-words-textarea" data-original-words="${escapeHtml(words.join('\n'))}">${escapeHtml(words.join('\n'))}</textarea>
+                    </div>
                 `;
                 container.appendChild(item);
             });
@@ -1930,6 +2049,110 @@
             } catch (error) {
                 console.error('Error deleting library:', error);
                 alert('An error occurred while deleting the library');
+            }
+        }
+
+        function editLibrary(name) {
+            const item = document.querySelector(`.library-item[data-library-name="${escapeHtml(name)}"]`);
+            if (!item) return;
+
+            item.classList.add('editing');
+
+            // Toggle visibility
+            item.querySelector('.library-item-name').classList.add('editing');
+            item.querySelector('.library-item-name-input').classList.add('editing');
+            item.querySelector('.library-item-words-text').style.display = 'none';
+            item.querySelector('.library-item-words-textarea').classList.add('editing');
+            item.querySelector('.library-item-actions').classList.add('editing');
+            item.querySelector('.library-item-edit-actions').classList.add('editing');
+
+            // Focus on name input
+            item.querySelector('.library-item-name-input').focus();
+        }
+
+        function cancelLibraryEdit(name) {
+            const item = document.querySelector(`.library-item[data-library-name="${escapeHtml(name)}"]`);
+            if (!item) return;
+
+            // Reset to original values
+            const nameInput = item.querySelector('.library-item-name-input');
+            const wordsTextarea = item.querySelector('.library-item-words-textarea');
+            nameInput.value = nameInput.dataset.originalName;
+            wordsTextarea.value = wordsTextarea.dataset.originalWords;
+
+            // Remove editing state
+            item.classList.remove('editing');
+            item.querySelector('.library-item-name').classList.remove('editing');
+            item.querySelector('.library-item-name-input').classList.remove('editing');
+            item.querySelector('.library-item-words-text').style.display = '';
+            item.querySelector('.library-item-words-textarea').classList.remove('editing');
+            item.querySelector('.library-item-actions').classList.remove('editing');
+            item.querySelector('.library-item-edit-actions').classList.remove('editing');
+        }
+
+        async function saveLibraryEdit(oldName) {
+            const item = document.querySelector(`.library-item[data-library-name="${escapeHtml(oldName)}"]`);
+            if (!item) return;
+
+            const newName = item.querySelector('.library-item-name-input').value.trim();
+            const wordsText = item.querySelector('.library-item-words-textarea').value.trim();
+
+            if (!newName) {
+                alert('Library name cannot be empty');
+                return;
+            }
+
+            if (!wordsText) {
+                alert('Library must have at least one word');
+                return;
+            }
+
+            // If name changed, check if new name already exists
+            if (newName !== oldName && libraries[newName]) {
+                alert('A library with this name already exists');
+                return;
+            }
+
+            try {
+                // Delete old library if name changed
+                if (newName !== oldName) {
+                    await fetch(`/api/libraries/${encodeURIComponent(oldName)}`, {
+                        method: 'DELETE'
+                    });
+                }
+
+                // Save with new name/words
+                const response = await fetch('/api/libraries', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: newName, words: wordsText })
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    // Update local libraries object
+                    if (newName !== oldName) {
+                        delete libraries[oldName];
+                        // Update selected libraries if name changed
+                        if (selectedLibraries.has(oldName)) {
+                            selectedLibraries.delete(oldName);
+                            selectedLibraries.add(newName);
+                        }
+                        // Update hidden libraries if name changed
+                        if (hiddenLibraries.has(oldName)) {
+                            hiddenLibraries.delete(oldName);
+                            hiddenLibraries.add(newName);
+                        }
+                    }
+                    libraries[newName] = data.words;
+                    renderLibraryList();
+                    renderLibraryChips();
+                } else {
+                    alert('Error: ' + (data.error || 'Failed to update library'));
+                }
+            } catch (error) {
+                console.error('Error updating library:', error);
+                alert('An error occurred while updating the library');
             }
         }
 

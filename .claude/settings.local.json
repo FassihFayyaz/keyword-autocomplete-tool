@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python:*)",
+      "Bash(\"venv/Scripts/pip.exe\" install -r requirements.txt)",
+      "Bash(\"venv/Scripts/python.exe\" app.py)",
+      "WebSearch",
+      "Bash(\"venv/Scripts/pip.exe\" install python-dotenv)",
+      "Bash(venvScriptspython.exe:*)",
+      "Bash(venv/Scripts/python.exe:*)",
+      "Bash(gh repo create:*)",
+      "Bash(gh api:*)",
+      "Bash(git config:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
+    ]
+  }
+}

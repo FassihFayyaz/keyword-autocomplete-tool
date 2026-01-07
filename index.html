@@ -1,0 +1,1895 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fassih Fayyaz - Long-tail Keyword Harvester</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            color: #e4e4e7;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            padding: 30px 0;
+            border-bottom: 1px solid #3f3f46;
+            margin-bottom: 30px;
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(90deg, #60a5fa, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+
+        header p {
+            color: #a1a1aa;
+            font-size: 1.1rem;
+        }
+
+        .main-layout {
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            gap: 30px;
+            align-items: start;
+        }
+
+        /* Control Panel */
+        .control-panel {
+            background: #27272a;
+            border-radius: 12px;
+            padding: 24px;
+            position: sticky;
+            top: 20px;
+        }
+
+        .panel-section {
+            margin-bottom: 24px;
+        }
+
+        .panel-section:last-child {
+            margin-bottom: 0;
+        }
+
+        .section-title {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #71717a;
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+
+        .input-group {
+            margin-bottom: 16px;
+        }
+
+        input[type="text"],
+        input[type="password"],
+        input[type="number"],
+        textarea,
+        select {
+            width: 100%;
+            padding: 12px 16px;
+            background: #18181b;
+            border: 1px solid #3f3f46;
+            border-radius: 8px;
+            color: #e4e4e7;
+            font-size: 1rem;
+            transition: border-color 0.2s;
+            font-family: inherit;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+
+        input:focus,
+        textarea:focus,
+        select:focus {
+            outline: none;
+            border-color: #60a5fa;
+        }
+
+        .input-hint {
+            font-size: 0.8rem;
+            color: #71717a;
+            margin-top: 6px;
+        }
+
+        /* Checkboxes */
+        .checkbox-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 6px;
+            transition: background 0.2s;
+        }
+
+        .checkbox-item:hover {
+            background: #3f3f46;
+        }
+
+        .checkbox-item input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: #60a5fa;
+            cursor: pointer;
+        }
+
+        .checkbox-item label {
+            cursor: pointer;
+            font-size: 0.95rem;
+        }
+
+        /* Buttons */
+        .btn {
+            width: 100%;
+            padding: 14px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: #3f3f46;
+            color: #e4e4e7;
+            padding: 10px 16px;
+            font-size: 0.9rem;
+        }
+
+        .btn-secondary:hover {
+            background: #52525b;
+        }
+
+        /* Results Area */
+        .results-area {
+            background: #27272a;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .results-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid #3f3f46;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .status-bar {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #a1a1aa;
+            font-size: 0.9rem;
+        }
+
+        .status-item strong {
+            color: #e4e4e7;
+        }
+
+        .status-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #52525b;
+        }
+
+        .status-indicator.active {
+            background: #22c55e;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Filter Bar */
+        .filter-bar {
+            padding: 16px 24px;
+            background: #18181b;
+            border-bottom: 1px solid #3f3f46;
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .filter-group label {
+            font-size: 0.85rem;
+            color: #a1a1aa;
+        }
+
+        .filter-group input {
+            padding: 8px 12px;
+            font-size: 0.9rem;
+            width: 180px;
+        }
+
+        .filter-group input[type="number"] {
+            width: 70px;
+        }
+
+        .btn-apply {
+            padding: 8px 16px;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        .btn-apply:hover {
+            background: #2563eb;
+        }
+
+        /* Library Filter Section */
+        .library-filter-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .library-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 8px;
+        }
+
+        .library-chip {
+            padding: 6px 12px;
+            background: #3f3f46;
+            border: 1px solid #52525b;
+            border-radius: 16px;
+            font-size: 0.8rem;
+            color: #a1a1aa;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .library-chip:hover {
+            background: #52525b;
+        }
+
+        .library-chip.selected {
+            background: #ef4444;
+            border-color: #ef4444;
+            color: white;
+        }
+
+        .library-chip .remove-lib {
+            width: 14px;
+            height: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.2);
+            font-size: 10px;
+            line-height: 1;
+        }
+
+        .library-chip .content-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .library-chip .library-eye {
+            cursor: pointer;
+            padding: 4px;
+            margin-left: 2px;
+            border-radius: 4px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .library-chip .library-eye:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .library-chip .library-eye.hidden {
+            opacity: 0.5;
+        }
+
+        .library-chip .library-eye svg {
+            width: 14px;
+            height: 14px;
+            stroke: currentColor;
+            fill: none;
+            stroke-width: 2;
+        }
+
+        .btn-manage-libs {
+            padding: 6px 12px;
+            background: #6366f1;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: background 0.2s;
+        }
+
+        .btn-manage-libs:hover {
+            background: #4f46e5;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: #27272a;
+            border-radius: 12px;
+            padding: 24px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #3f3f46;
+        }
+
+        .modal-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #e4e4e7;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: #a1a1aa;
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 4px;
+            line-height: 1;
+        }
+
+        .modal-close:hover {
+            color: #e4e4e7;
+        }
+
+        .library-form {
+            margin-bottom: 20px;
+        }
+
+        .library-form input {
+            margin-bottom: 12px;
+        }
+
+        .library-form textarea {
+            min-height: 100px;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 12px;
+            align-items: flex-end;
+        }
+
+        .form-row .input-group {
+            flex: 1;
+        }
+
+        .btn-save {
+            background: #22c55e;
+            color: white;
+        }
+
+        .btn-save:hover {
+            background: #16a34a;
+        }
+
+        .library-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .library-item {
+            background: #18181b;
+            border: 1px solid #3f3f46;
+            border-radius: 8px;
+            padding: 16px;
+        }
+
+        .library-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .library-item-name {
+            font-weight: 600;
+            color: #e4e4e7;
+        }
+
+        .library-item-count {
+            font-size: 0.85rem;
+            color: #71717a;
+        }
+
+        .library-item-words {
+            font-size: 0.85rem;
+            color: #a1a1aa;
+            line-height: 1.5;
+        }
+
+        .btn-delete-lib {
+            padding: 4px 10px;
+            background: #ef4444;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.75rem;
+        }
+
+        .btn-delete-lib:hover {
+            background: #dc2626;
+        }
+
+        /* Topics Section */
+        .topics-section {
+            padding: 16px 24px;
+            background: #1f1f23;
+            border-bottom: 1px solid #3f3f46;
+        }
+
+        .topics-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .topics-title {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #71717a;
+            font-weight: 600;
+        }
+
+        .btn-extract-topics {
+            padding: 6px 12px;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: background 0.2s;
+        }
+
+        .btn-extract-topics:hover {
+            background: #2563eb;
+        }
+
+        .btn-extract-topics:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .topics-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .topic-chip {
+            padding: 8px 14px;
+            background: #27272a;
+            border: 1px solid #3f3f46;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            color: #a1a1aa;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .topic-chip:hover {
+            background: #3f3f46;
+            border-color: #52525b;
+        }
+
+        .topic-chip.active {
+            background: #3b82f6;
+            border-color: #3b82f6;
+            color: white;
+        }
+
+        .topic-chip .topic-count {
+            background: #18181b;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.75rem;
+            color: #71717a;
+        }
+
+        .topic-chip.active .topic-count {
+            background: rgba(0, 0, 0, 0.2);
+            color: white;
+        }
+
+        .topic-eye {
+            cursor: pointer;
+            padding: 4px;
+            margin-left: 6px;
+            border-radius: 4px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .topic-eye:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .topic-eye.hidden {
+            opacity: 0.5;
+        }
+
+        .topic-eye svg {
+            width: 14px;
+            height: 14px;
+            stroke: currentColor;
+            fill: none;
+            stroke-width: 2;
+        }
+
+        .no-topics {
+            color: #52525b;
+            font-size: 0.9rem;
+            font-style: italic;
+        }
+
+        /* Actions Bar */
+        .actions-bar {
+            padding: 12px 24px;
+            background: #18181b;
+            border-bottom: 1px solid #3f3f46;
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        /* Data Table */
+        .table-container {
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead {
+            position: sticky;
+            top: 0;
+            background: #27272a;
+            z-index: 10;
+        }
+
+        th {
+            text-align: left;
+            padding: 14px 16px;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #71717a;
+            font-weight: 600;
+            border-bottom: 1px solid #3f3f46;
+        }
+
+        td {
+            padding: 12px 16px;
+            border-bottom: 1px solid #3f3f46;
+            font-size: 0.95rem;
+        }
+
+        tbody tr:hover {
+            background: #3f3f46;
+        }
+
+        .keyword-col {
+            color: #e4e4e7;
+            font-weight: 500;
+        }
+
+        .source-col {
+            color: #a1a1aa;
+            font-size: 0.9rem;
+        }
+
+        .count-col {
+            color: #a1a1aa;
+            text-align: center;
+        }
+
+        /* Empty State */
+        .empty-state {
+            padding: 80px 20px;
+            text-align: center;
+            color: #52525b;
+        }
+
+        .empty-state svg {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+
+        .empty-state p {
+            font-size: 1.1rem;
+        }
+
+        /* Progress Bar */
+        .progress-container {
+            margin-top: 16px;
+            display: none;
+        }
+
+        .progress-container.active {
+            display: block;
+        }
+
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .progress-percentage {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #3b82f6;
+        }
+
+        .progress-eta {
+            font-size: 0.75rem;
+            color: #71717a;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: #3f3f46;
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+            border-radius: 4px;
+            transition: width 0.3s ease;
+            position: relative;
+        }
+
+        .progress-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            animation: shimmer 1.5s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .progress-text {
+            margin-top: 10px;
+            font-size: 0.85rem;
+            color: #a1a1aa;
+            text-align: center;
+            line-height: 1.4;
+        }
+
+        .progress-stats {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 12px;
+            padding: 10px;
+            background: #18181b;
+            border-radius: 6px;
+        }
+
+        .progress-stat {
+            text-align: center;
+        }
+
+        .progress-stat-value {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #e4e4e7;
+        }
+
+        .progress-stat-label {
+            font-size: 0.7rem;
+            color: #71717a;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 2px;
+        }
+
+        .progress-modifiers {
+            margin-top: 8px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+        }
+
+        .progress-modifier-tag {
+            font-size: 0.7rem;
+            padding: 2px 8px;
+            background: #3f3f46;
+            border-radius: 4px;
+            color: #a1a1aa;
+        }
+
+        /* Seed List */
+        .seed-list {
+            margin-top: 12px;
+            padding: 12px;
+            background: #18181b;
+            border-radius: 8px;
+        }
+
+        .seed-list-title {
+            font-size: 0.85rem;
+            color: #71717a;
+            margin-bottom: 8px;
+        }
+
+        .seed-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .seed-tag {
+            background: #3f3f46;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            color: #a1a1aa;
+        }
+
+        .seed-tag.active {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .seed-tag.completed {
+            background: #22c55e;
+            color: white;
+        }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .main-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .control-panel {
+                position: static;
+            }
+
+            .filter-bar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .filter-group {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .filter-group input {
+                width: 100%;
+            }
+        }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #18181b;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #3f3f46;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #52525b;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Keyword Finder by Fassih Fayyaz</h1>
+            <p>Discover long-tail keyword opportunities with Google Autocomplete and DataForSEO</p>
+        </header>
+
+        <div class="main-layout">
+            <!-- Control Panel -->
+            <aside class="control-panel">
+                <div class="panel-section">
+                    <div class="section-title">Seed Keywords</div>
+                    <div class="input-group">
+                        <textarea id="seedsInput" placeholder="Enter seed keywords (one per line):&#10;coffee maker&#10;espresso machine&#10;french press"></textarea>
+                        <div class="input-hint">One keyword per line for bulk processing</div>
+                    </div>
+                    <div class="seed-list" id="seedList" style="display: none;">
+                        <div class="seed-list-title">Processing Seeds:</div>
+                        <div class="seed-tags" id="seedTags"></div>
+                    </div>
+                </div>
+
+                <div class="panel-section">
+                    <div class="section-title">Data Source</div>
+                    <div class="input-group">
+                        <select id="apiSource">
+                            <option value="google">Google Autocomplete (Free)</option>
+                            <option value="dataforseo">DataForSEO API (Paid)</option>
+                        </select>
+                        <div class="input-hint" id="apiHint">Free option - rate limited</div>
+                    </div>
+                    <div class="checkbox-group" id="proxyOptions" style="margin-top: 12px;">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="useProxy">
+                            <label for="useProxy">Use Proxy (from .env)</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel-section">
+                    <div class="section-title">Modifiers</div>
+                    <div class="checkbox-group">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="alphabetCheck" checked>
+                            <label for="alphabetCheck">A-Z Alphabet Soup</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="numbersCheck">
+                            <label for="numbersCheck">Numbers (0-9)</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="prepositionsCheck">
+                            <label for="prepositionsCheck">Prepositions</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="comparisonsCheck" checked>
+                            <label for="comparisonsCheck">Comparisons (vs, or)</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="intentsCheck" checked>
+                            <label for="intentsCheck">Intent (Best, Top)</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="questionsCheck" checked>
+                            <label for="questionsCheck">Questions (How, What)</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel-section">
+                    <button class="btn btn-primary" id="startBtn" onclick="startHarvesting()">
+                        Start Harvesting
+                    </button>
+                    <div class="progress-container" id="progressContainer">
+                        <div class="progress-header">
+                            <span class="progress-percentage" id="progressPercentage">0%</span>
+                            <span class="progress-eta" id="progressEta">Estimating...</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+                        </div>
+                        <div class="progress-text" id="progressText">Initializing...</div>
+                        <div class="progress-stats">
+                            <div class="progress-stat">
+                                <div class="progress-stat-value" id="statQueries">0</div>
+                                <div class="progress-stat-label">Queries</div>
+                            </div>
+                            <div class="progress-stat">
+                                <div class="progress-stat-value" id="statFound">0</div>
+                                <div class="progress-stat-label">Found</div>
+                            </div>
+                            <div class="progress-stat">
+                                <div class="progress-stat-value" id="statRemaining">0</div>
+                                <div class="progress-stat-label">Remaining</div>
+                            </div>
+                        </div>
+                        <div class="progress-modifiers" id="progressModifiers"></div>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Results Area -->
+            <main class="results-area">
+                <div class="results-header">
+                    <div class="status-bar">
+                        <div class="status-indicator" id="statusIndicator"></div>
+                        <div class="status-item">
+                            Keywords: <strong id="keywordCount">0</strong>
+                        </div>
+                        <div class="status-item" id="currentQueryStatus" style="display: none;">
+                            Processing: <strong id="currentQuery">-</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="filter-bar">
+                    <div class="filter-group">
+                        <label>Include:</label>
+                        <input type="text" id="includeFilter" placeholder="containing text...">
+                    </div>
+                    <div class="filter-group">
+                        <label>Exclude:</label>
+                        <input type="text" id="excludeFilter" placeholder="amazon, ebay...">
+                    </div>
+                    <div class="filter-group">
+                        <label>Min Words:</label>
+                        <input type="number" id="minWords" value="0" min="0">
+                    </div>
+                    <div class="filter-group">
+                        <label>Max Words:</label>
+                        <input type="number" id="maxWords" value="999" min="1">
+                    </div>
+                    <button class="btn-apply" onclick="applyFilters()">Apply Filters</button>
+                </div>
+
+                <div class="filter-bar" style="flex-direction: column; align-items: stretch;">
+                    <div class="library-filter-group">
+                        <label style="color: #a1a1aa; font-size: 0.85rem;">Filter Libraries:</label>
+                        <button class="btn-manage-libs" onclick="openLibraryModal()">Manage Libraries</button>
+                    </div>
+                    <div class="library-chips" id="libraryChips">
+                        <span style="color: #52525b; font-size: 0.85rem; font-style: italic;">No libraries yet. Click "Manage Libraries" to create one.</span>
+                    </div>
+                </div>
+
+                <div class="topics-section">
+                    <div class="topics-header">
+                        <div class="topics-title">Topics</div>
+                        <button class="btn-extract-topics" id="extractTopicsBtn" onclick="extractTopics()" disabled>
+                            Generate Topics
+                        </button>
+                    </div>
+                    <div class="topics-container" id="topicsContainer">
+                        <span class="no-topics">No topics yet. Click "Generate Topics" after harvesting keywords.</span>
+                    </div>
+                </div>
+
+                <div class="actions-bar">
+                    <button class="btn-secondary" onclick="document.getElementById('importFileInput').click()">Import Keywords</button>
+                    <input type="file" id="importFileInput" accept=".txt,.csv,.xlsx,.xls" style="display: none;" onchange="importKeywords(this)">
+                    <button class="btn-secondary" onclick="copyToClipboard()">Copy All</button>
+                    <button class="btn-secondary" onclick="exportCSV()">Export CSV</button>
+                    <button class="btn-secondary" onclick="exportTXT()">Export TXT</button>
+                </div>
+
+                <div class="table-container">
+                    <table id="resultsTable">
+                        <thead>
+                            <tr>
+                                <th>Keyword</th>
+                                <th>Seed</th>
+                                <th>Source Modifier</th>
+                                <th style="text-align: center;">Words</th>
+                            </tr>
+                        </thead>
+                        <tbody id="resultsBody">
+                        </tbody>
+                    </table>
+                    <div class="empty-state" id="emptyState">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                        </svg>
+                        <p>Enter seed keywords and click "Start Harvesting" to begin</p>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Library Management Modal -->
+    <div class="modal" id="libraryModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Filter Words Libraries</h2>
+                <button class="modal-close" onclick="closeLibraryModal()">&times;</button>
+            </div>
+
+            <div class="library-form">
+                <div class="section-title">Create New Library</div>
+                <div class="input-group">
+                    <input type="text" id="newLibraryName" placeholder="Library name (e.g., Country, City, Brand)">
+                </div>
+                <div class="input-group">
+                    <textarea id="newLibraryWords" placeholder="Enter words (one per line):&#10;india&#10;pakistan&#10;multan&#10;mumbai"></textarea>
+                </div>
+                <button class="btn btn-save" onclick="saveLibrary()">Save Library</button>
+            </div>
+
+            <div class="section-title" style="margin-bottom: 12px;">Your Libraries</div>
+            <div class="library-list" id="libraryList">
+                <span style="color: #52525b; font-size: 0.9rem; font-style: italic;">No libraries created yet.</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let allKeywords = [];
+        let filteredKeywords = [];
+        let isHarvesting = false;
+        let eventSource = null;
+        let seeds = [];
+        let seedStatus = {};
+        let topics = [];
+        let selectedTopics = new Set();
+        let hiddenTopics = new Set();
+        let harvestStartTime = null;
+        let totalQueries = 0;
+        let completedQueries = 0;
+
+        document.getElementById('apiSource').addEventListener('change', function() {
+            const hint = document.getElementById('apiHint');
+            const proxyOptions = document.getElementById('proxyOptions');
+            if (this.value === 'dataforseo') {
+                hint.textContent = 'Requires credentials in .env file';
+                proxyOptions.style.display = 'none';
+            } else {
+                hint.textContent = 'Free option - rate limited';
+                proxyOptions.style.display = 'flex';
+            }
+        });
+
+        function getModifiers() {
+            return {
+                alphabet: document.getElementById('alphabetCheck').checked,
+                numbers: document.getElementById('numbersCheck').checked,
+                prepositions: document.getElementById('prepositionsCheck').checked,
+                comparisons: document.getElementById('comparisonsCheck').checked,
+                intents: document.getElementById('intentsCheck').checked,
+                questions: document.getElementById('questionsCheck').checked
+            };
+        }
+
+        function parseSeeds() {
+            const input = document.getElementById('seedsInput').value;
+            return input.split('\n').map(s => s.trim()).filter(s => s.length > 0);
+        }
+
+        function updateSeedList() {
+            const seedList = document.getElementById('seedList');
+            const seedTags = document.getElementById('seedTags');
+            if (seeds.length === 0) {
+                seedList.style.display = 'none';
+                return;
+            }
+            seedList.style.display = 'block';
+            seedTags.innerHTML = '';
+            seeds.forEach((seed, idx) => {
+                const tag = document.createElement('span');
+                tag.className = 'seed-tag';
+                tag.id = `seed-tag-${idx}`;
+                const status = seedStatus[idx];
+                if (status === 'completed') {
+                    tag.classList.add('completed');
+                    tag.textContent = `✓ ${seed}`;
+                } else if (status === 'active') {
+                    tag.classList.add('active');
+                    tag.textContent = `→ ${seed}`;
+                } else {
+                    tag.textContent = seed;
+                }
+                seedTags.appendChild(tag);
+            });
+        }
+
+        async function startHarvesting() {
+            if (isHarvesting) {
+                stopHarvesting();
+                return;
+            }
+            seeds = parseSeeds();
+            if (seeds.length === 0) {
+                alert('Please enter at least one seed keyword');
+                return;
+            }
+            isHarvesting = true;
+            allKeywords = [];
+            filteredKeywords = [];
+            seedStatus = {};
+            harvestStartTime = Date.now();
+            completedQueries = 0;
+            totalQueries = 0;
+
+            document.getElementById('startBtn').textContent = 'Stop Harvesting';
+            document.getElementById('progressContainer').classList.add('active');
+            document.getElementById('statusIndicator').classList.add('active');
+            document.getElementById('currentQueryStatus').style.display = 'flex';
+            document.getElementById('emptyState').style.display = 'none';
+            document.getElementById('resultsBody').innerHTML = '';
+
+            // Reset progress display
+            document.getElementById('progressFill').style.width = '0%';
+            document.getElementById('progressPercentage').textContent = '0%';
+            document.getElementById('progressEta').textContent = 'Estimating...';
+            document.getElementById('progressText').textContent = 'Initializing...';
+            document.getElementById('statQueries').textContent = '0';
+            document.getElementById('statFound').textContent = '0';
+            document.getElementById('statRemaining').textContent = '0';
+
+            // Show active modifiers
+            const modifiers = getModifiers();
+            const activeModifiers = [];
+            if (modifiers.alphabet) activeModifiers.push('A-Z');
+            if (modifiers.numbers) activeModifiers.push('0-9');
+            if (modifiers.prepositions) activeModifiers.push('Prep');
+            if (modifiers.comparisons) activeModifiers.push('Comp');
+            if (modifiers.intents) activeModifiers.push('Intent');
+            if (modifiers.questions) activeModifiers.push('Quest');
+
+            const modifiersContainer = document.getElementById('progressModifiers');
+            modifiersContainer.innerHTML = '';
+            activeModifiers.forEach(mod => {
+                const tag = document.createElement('span');
+                tag.className = 'progress-modifier-tag';
+                tag.textContent = mod;
+                modifiersContainer.appendChild(tag);
+            });
+
+            updateSeedList();
+            const requestData = {
+                seeds: seeds.join('\n'),
+                api_source: document.getElementById('apiSource').value,
+                use_proxy: document.getElementById('useProxy').checked,
+                ...modifiers
+            };
+            try {
+                const response = await fetch('/api/harvest', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(requestData)
+                });
+                if (!response.ok) throw new Error('Failed to start harvesting');
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop() || '';
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            try {
+                                const data = JSON.parse(line.slice(6));
+                                handleSSEMessage(data);
+                            } catch (e) {
+                                console.error('Error parsing SSE data:', e);
+                            }
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('An error occurred while harvesting keywords');
+            } finally {
+                stopHarvesting();
+            }
+        }
+
+        function handleSSEMessage(data) {
+            switch (data.type) {
+                case 'progress':
+                    completedQueries = data.current;
+                    totalQueries = data.total;
+                    const progress = (data.current / data.total) * 100;
+                    const remaining = data.total - data.current;
+
+                    // Update progress bar and percentage
+                    document.getElementById('progressFill').style.width = `${progress}%`;
+                    document.getElementById('progressPercentage').textContent = `${Math.round(progress)}%`;
+
+                    // Calculate ETA
+                    const elapsed = Date.now() - harvestStartTime;
+                    const avgTimePerQuery = elapsed / data.current;
+                    const etaMs = avgTimePerQuery * remaining;
+                    const etaSeconds = Math.round(etaMs / 1000);
+
+                    if (etaSeconds < 60) {
+                        document.getElementById('progressEta').textContent = `~${etaSeconds}s remaining`;
+                    } else if (etaSeconds < 3600) {
+                        const mins = Math.floor(etaSeconds / 60);
+                        const secs = etaSeconds % 60;
+                        document.getElementById('progressEta').textContent = `~${mins}m ${secs}s remaining`;
+                    } else {
+                        const hours = Math.floor(etaSeconds / 3600);
+                        const mins = Math.floor((etaSeconds % 3600) / 60);
+                        document.getElementById('progressEta').textContent = `~${hours}h ${mins}m remaining`;
+                    }
+
+                    // Update stats
+                    document.getElementById('statQueries').textContent = data.current;
+                    document.getElementById('statFound').textContent = data.found;
+                    document.getElementById('statRemaining').textContent = remaining;
+
+                    // Update progress text
+                    document.getElementById('progressText').textContent =
+                        `Processing "${data.seed}": query ${data.current}/${data.total}`;
+                    document.getElementById('currentQuery').textContent = data.query;
+
+                    seedStatus[data.seed_index] = 'active';
+                    updateSeedList();
+                    break;
+                case 'seed_complete':
+                    seedStatus[data.seed_index] = 'completed';
+                    updateSeedList();
+                    document.getElementById('progressText').textContent =
+                        `✓ Completed "${data.seed}": ${data.count} keywords found`;
+                    break;
+                case 'complete':
+                    allKeywords = data.keywords || [];
+                    filteredKeywords = [...allKeywords];
+                    renderTable(filteredKeywords);
+                    updateStats(filteredKeywords.length);
+
+                    // Final progress update
+                    document.getElementById('progressFill').style.width = '100%';
+                    document.getElementById('progressPercentage').textContent = '100%';
+                    document.getElementById('progressEta').textContent = 'Complete!';
+                    document.getElementById('statQueries').textContent = totalQueries;
+                    document.getElementById('statFound').textContent = data.total;
+                    document.getElementById('statRemaining').textContent = '0';
+                    document.getElementById('progressText').textContent =
+                        `✓ Harvesting complete! Found ${data.total} keywords total`;
+
+                    document.getElementById('extractTopicsBtn').disabled = false;
+                    topics = [];
+                    selectedTopics.clear();
+                    hiddenTopics.clear();
+                    document.getElementById('topicsContainer').innerHTML =
+                        '<span class="no-topics">Click "Generate Topics" to analyze keywords.</span>';
+                    break;
+            }
+        }
+
+        function stopHarvesting() {
+            isHarvesting = false;
+            document.getElementById('startBtn').textContent = 'Start Harvesting';
+            document.getElementById('statusIndicator').classList.remove('active');
+            document.getElementById('currentQueryStatus').style.display = 'none';
+        }
+
+        function renderTable(keywords) {
+            const tbody = document.getElementById('resultsBody');
+            tbody.innerHTML = '';
+            keywords.forEach(kw => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="keyword-col">${escapeHtml(kw.keyword)}</td>
+                    <td class="source-col">${escapeHtml(kw.seed || '-')}</td>
+                    <td class="source-col">${escapeHtml(kw.source)}</td>
+                    <td class="count-col">${kw.word_count}</td>
+                `;
+                tbody.appendChild(row);
+            });
+            if (keywords.length === 0) {
+                document.getElementById('emptyState').style.display = 'block';
+            } else {
+                document.getElementById('emptyState').style.display = 'none';
+            }
+        }
+
+        function updateStats(count) {
+            document.getElementById('keywordCount').textContent = count;
+        }
+
+        function applyFilters() {
+            const filters = {
+                include: document.getElementById('includeFilter').value,
+                exclude: document.getElementById('excludeFilter').value,
+                min_words: parseInt(document.getElementById('minWords').value) || 0,
+                max_words: parseInt(document.getElementById('maxWords').value) || 999
+            };
+            filteredKeywords = allKeywords.filter(kw => {
+                if (filters.include) {
+                    if (!kw.keyword.toLowerCase().includes(filters.include.toLowerCase())) return false;
+                }
+                if (filters.exclude) {
+                    const excludeTerms = filters.exclude.split(',').map(t => t.trim().toLowerCase());
+                    for (const term of excludeTerms) {
+                        if (kw.keyword.toLowerCase().includes(term)) return false;
+                    }
+                }
+                if (kw.word_count < filters.min_words || kw.word_count > filters.max_words) return false;
+                return true;
+            });
+            renderTable(filteredKeywords);
+            updateStats(filteredKeywords.length);
+        }
+
+        async function extractTopics() {
+            if (allKeywords.length === 0) {
+                alert('No keywords to extract topics from. Please harvest keywords first.');
+                return;
+            }
+            const btn = document.getElementById('extractTopicsBtn');
+            btn.disabled = true;
+            btn.textContent = 'Generating...';
+            try {
+                const response = await fetch('/api/topics', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ keywords: allKeywords, top_n: 15 })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    topics = data.topics;
+                    selectedTopics.clear();
+                    hiddenTopics.clear();
+                    renderTopics();
+                }
+            } catch (error) {
+                console.error('Error extracting topics:', error);
+                alert('An error occurred while extracting topics');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Regenerate Topics';
+            }
+        }
+
+        function renderTopics() {
+            const container = document.getElementById('topicsContainer');
+            container.innerHTML = '';
+            if (topics.length === 0) {
+                container.innerHTML = '<span class="no-topics">No topics found.</span>';
+                return;
+            }
+            topics.forEach(topic => {
+                const chip = document.createElement('div');
+                chip.className = 'topic-chip';
+                chip.dataset.topic = topic.topic;
+                const isHidden = hiddenTopics.has(topic.topic);
+                const contentWrapper = document.createElement('div');
+                contentWrapper.style.cssText = 'display: flex; align-items: center; gap: 6px;';
+                contentWrapper.onclick = (e) => {
+                    if (!e.target.closest('.topic-eye')) toggleTopic(topic.topic, chip);
+                };
+                const displayName = topic.topic.charAt(0).toUpperCase() + topic.topic.slice(1);
+                contentWrapper.innerHTML = `
+                    <span class="topic-name">${displayName}</span>
+                    <span class="topic-count">${topic.keyword_count}</span>
+                `;
+                const eyeIcon = document.createElement('div');
+                eyeIcon.className = 'topic-eye' + (isHidden ? ' hidden' : '');
+                eyeIcon.innerHTML = isHidden ?
+                    `<svg viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.157-1.996M3.98 5.98a10.05 10.05 0 008.175-3.825M9.88 9.88l3.24-3.24m7.07-7.07a3 3 0 11-4.243 4.243L9.88 9.88zm-2.12-2.12a3 3 0 014.243-4.243" /></svg>` :
+                    `<svg viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>`;
+                eyeIcon.title = isHidden ? 'Show keywords with this topic' : 'Hide keywords with this topic';
+                eyeIcon.onclick = (e) => {
+                    e.stopPropagation();
+                    toggleHideTopic(topic.topic, chip);
+                };
+                chip.appendChild(contentWrapper);
+                chip.appendChild(eyeIcon);
+                container.appendChild(chip);
+            });
+        }
+
+        function toggleTopic(topicName, chipElement) {
+            if (selectedTopics.has(topicName)) {
+                selectedTopics.delete(topicName);
+                chipElement.classList.remove('active');
+            } else {
+                selectedTopics.add(topicName);
+                chipElement.classList.add('active');
+            }
+            applyTopicFilters();
+        }
+
+        function toggleHideTopic(topicName, chipElement) {
+            if (hiddenTopics.has(topicName)) {
+                hiddenTopics.delete(topicName);
+                chipElement.querySelector('.topic-eye').classList.remove('hidden');
+            } else {
+                hiddenTopics.add(topicName);
+                chipElement.querySelector('.topic-eye').classList.add('hidden');
+            }
+            const eyeIcon = chipElement.querySelector('.topic-eye');
+            const isHidden = hiddenTopics.has(topicName);
+            eyeIcon.innerHTML = isHidden ?
+                `<svg viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.157-1.996M3.98 5.98a10.05 10.05 0 008.175-3.825M9.88 9.88l3.24-3.24m7.07-7.07a3 3 0 11-4.243 4.243L9.88 9.88zm-2.12-2.12a3 3 0 014.243-4.243" /></svg>` :
+                `<svg viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>`;
+            eyeIcon.title = isHidden ? 'Show keywords with this topic' : 'Hide keywords with this topic';
+            applyTopicFilters();
+        }
+
+        function applyTopicFilters() {
+            filteredKeywords = allKeywords.filter(kw => {
+                const keywordLower = kw['keyword'].toLowerCase();
+                const hasHiddenTopic = Array.from(hiddenTopics).some(topic => keywordLower.includes(topic));
+                if (hasHiddenTopic) return false;
+                if (selectedTopics.size === 0) return true;
+                return Array.from(selectedTopics).some(topic => keywordLower.includes(topic));
+            });
+            renderTable(filteredKeywords);
+            updateStats(filteredKeywords.length);
+        }
+
+        async function copyToClipboard() {
+            const keywords = filteredKeywords.map(k => k.keyword).join('\n');
+            await navigator.clipboard.writeText(keywords);
+            alert(`Copied ${filteredKeywords.length} keywords to clipboard`);
+        }
+
+        async function exportCSV() {
+            const response = await fetch('/api/export/csv', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ keywords: filteredKeywords })
+            });
+            const blob = await response.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'keywords.csv';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        async function exportTXT() {
+            const response = await fetch('/api/export/txt', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ keywords: filteredKeywords })
+            });
+            const blob = await response.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'keywords.txt';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        async function importKeywords(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            // Show loading state
+            const btn = document.querySelector('button[onclick*="importFileInput"]');
+            const originalText = btn.textContent;
+            btn.textContent = 'Importing...';
+            btn.disabled = true;
+
+            try {
+                const formData = new FormData();
+                formData.append('file', file);
+
+                const response = await fetch('/api/import', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Add imported keywords to existing ones or replace?
+                    // Let's add to existing
+                    allKeywords = [...allKeywords, ...data.keywords];
+                    filteredKeywords = [...allKeywords];
+
+                    renderTable(filteredKeywords);
+                    updateStats(filteredKeywords.length);
+
+                    // Enable topics button
+                    document.getElementById('extractTopicsBtn').disabled = false;
+
+                    // Clear the file input
+                    input.value = '';
+
+                    alert(`Successfully imported ${data.total} keywords!`);
+                } else {
+                    alert('Error: ' + (data.error || 'Failed to import keywords'));
+                }
+            } catch (error) {
+                console.error('Error importing keywords:', error);
+                alert('An error occurred while importing keywords');
+            } finally {
+                btn.textContent = originalText;
+                btn.disabled = false;
+            }
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        document.getElementById('seedsInput').addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.key === 'Enter') startHarvesting();
+        });
+
+        // Library Management
+        let libraries = {};
+        let selectedLibraries = new Set();
+        let hiddenLibraries = new Set();
+
+        // Load libraries on page load
+        async function loadLibraries() {
+            try {
+                const response = await fetch('/api/libraries');
+                const data = await response.json();
+                if (data.success) {
+                    libraries = data.libraries;
+                    renderLibraryChips();
+                }
+            } catch (error) {
+                console.error('Error loading libraries:', error);
+            }
+        }
+
+        function renderLibraryChips() {
+            const container = document.getElementById('libraryChips');
+            const libNames = Object.keys(libraries);
+
+            if (libNames.length === 0) {
+                container.innerHTML = '<span style="color: #52525b; font-size: 0.85rem; font-style: italic;">No libraries yet. Click "Manage Libraries" to create one.</span>';
+                return;
+            }
+
+            container.innerHTML = '';
+            libNames.forEach(name => {
+                const chip = document.createElement('div');
+                const isHidden = hiddenLibraries.has(name);
+                chip.className = 'library-chip' + (selectedLibraries.has(name) ? ' selected' : '');
+                chip.dataset.library = name;
+
+                const contentWrapper = document.createElement('div');
+                contentWrapper.className = 'content-wrapper';
+                contentWrapper.onclick = (e) => {
+                    if (!e.target.closest('.library-eye')) toggleLibrary(name);
+                };
+
+                contentWrapper.innerHTML = `<span>${escapeHtml(name)}</span>`;
+
+                const eyeIcon = document.createElement('div');
+                eyeIcon.className = 'library-eye' + (isHidden ? ' hidden' : '');
+                eyeIcon.innerHTML = isHidden ?
+                    `<svg viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.157-1.996M3.98 5.98a10.05 10.05 0 008.175-3.825M9.88 9.88l3.24-3.24m7.07-7.07a3 3 0 11-4.243 4.243L9.88 9.88zm-2.12-2.12a3 3 0 014.243-4.243" /></svg>` :
+                    `<svg viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>`;
+                eyeIcon.title = isHidden ? 'Show keywords with this library' : 'Hide keywords with this library';
+                eyeIcon.onclick = (e) => {
+                    e.stopPropagation();
+                    toggleHideLibrary(name, chip);
+                };
+
+                contentWrapper.appendChild(eyeIcon);
+                chip.appendChild(contentWrapper);
+                container.appendChild(chip);
+            });
+        }
+
+        function toggleLibrary(libName) {
+            if (selectedLibraries.has(libName)) {
+                selectedLibraries.delete(libName);
+            } else {
+                selectedLibraries.add(libName);
+            }
+            renderLibraryChips();
+            applyFilters();
+        }
+
+        function toggleHideLibrary(libName, chipElement) {
+            if (hiddenLibraries.has(libName)) {
+                hiddenLibraries.delete(libName);
+                chipElement.querySelector('.library-eye').classList.remove('hidden');
+            } else {
+                hiddenLibraries.add(libName);
+                chipElement.querySelector('.library-eye').classList.add('hidden');
+            }
+            const eyeIcon = chipElement.querySelector('.library-eye');
+            const isHidden = hiddenLibraries.has(libName);
+            eyeIcon.innerHTML = isHidden ?
+                `<svg viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.157-1.996M3.98 5.98a10.05 10.05 0 008.175-3.825M9.88 9.88l3.24-3.24m7.07-7.07a3 3 0 11-4.243 4.243L9.88 9.88zm-2.12-2.12a3 3 0 014.243-4.243" /></svg>` :
+                `<svg viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>`;
+            eyeIcon.title = isHidden ? 'Show keywords with this library' : 'Hide keywords with this library';
+            applyFilters();
+        }
+
+        function openLibraryModal() {
+            document.getElementById('libraryModal').classList.add('active');
+            loadLibrariesForModal();
+        }
+
+        function closeLibraryModal() {
+            document.getElementById('libraryModal').classList.remove('active');
+            document.getElementById('newLibraryName').value = '';
+            document.getElementById('newLibraryWords').value = '';
+        }
+
+        async function loadLibrariesForModal() {
+            try {
+                const response = await fetch('/api/libraries');
+                const data = await response.json();
+                if (data.success) {
+                    libraries = data.libraries;
+                    renderLibraryList();
+                }
+            } catch (error) {
+                console.error('Error loading libraries:', error);
+            }
+        }
+
+        function renderLibraryList() {
+            const container = document.getElementById('libraryList');
+            const libNames = Object.keys(libraries);
+
+            if (libNames.length === 0) {
+                container.innerHTML = '<span style="color: #52525b; font-size: 0.9rem; font-style: italic;">No libraries created yet.</span>';
+                return;
+            }
+
+            container.innerHTML = '';
+            libNames.forEach(name => {
+                const words = libraries[name];
+                const item = document.createElement('div');
+                item.className = 'library-item';
+                item.innerHTML = `
+                    <div class="library-item-header">
+                        <div>
+                            <span class="library-item-name">${escapeHtml(name)}</span>
+                            <span class="library-item-count">(${words.length} words)</span>
+                        </div>
+                        <button class="btn-delete-lib" onclick="deleteLibrary('${escapeHtml(name)}')">Delete</button>
+                    </div>
+                    <div class="library-item-words">${escapeHtml(words.slice(0, 10).join(', '))}${words.length > 10 ? '...' : ''}</div>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        async function saveLibrary() {
+            const name = document.getElementById('newLibraryName').value.trim();
+            const wordsText = document.getElementById('newLibraryWords').value;
+
+            if (!name) {
+                alert('Please enter a library name');
+                return;
+            }
+
+            if (!wordsText.trim()) {
+                alert('Please enter at least one word');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/libraries', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: name, words: wordsText })
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    libraries[name] = data.words;
+                    document.getElementById('newLibraryName').value = '';
+                    document.getElementById('newLibraryWords').value = '';
+                    renderLibraryList();
+                    renderLibraryChips();
+                    alert(`Library "${name}" saved with ${data.words.length} words`);
+                } else {
+                    alert('Error: ' + (data.error || 'Failed to save library'));
+                }
+            } catch (error) {
+                console.error('Error saving library:', error);
+                alert('An error occurred while saving the library');
+            }
+        }
+
+        async function deleteLibrary(name) {
+            if (!confirm(`Are you sure you want to delete the library "${name}"?`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/libraries/${encodeURIComponent(name)}`, {
+                    method: 'DELETE'
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    delete libraries[name];
+                    selectedLibraries.delete(name);
+                    renderLibraryList();
+                    renderLibraryChips();
+                } else {
+                    alert('Error: ' + (data.error || 'Failed to delete library'));
+                }
+            } catch (error) {
+                console.error('Error deleting library:', error);
+                alert('An error occurred while deleting the library');
+            }
+        }
+
+        // Modify applyFilters to include library filtering
+        const originalApplyFilters = applyFilters;
+        applyFilters = function() {
+            const filters = {
+                include: document.getElementById('includeFilter').value,
+                exclude: document.getElementById('excludeFilter').value,
+                min_words: parseInt(document.getElementById('minWords').value) || 0,
+                max_words: parseInt(document.getElementById('maxWords').value) || 999
+            };
+
+            filteredKeywords = allKeywords.filter(kw => {
+                const keywordLower = kw.keyword.toLowerCase();
+
+                // Include filter
+                if (filters.include) {
+                    if (!keywordLower.includes(filters.include.toLowerCase())) return false;
+                }
+
+                // Exclude filter (manual)
+                if (filters.exclude) {
+                    const excludeTerms = filters.exclude.split(',').map(t => t.trim().toLowerCase());
+                    for (const term of excludeTerms) {
+                        if (keywordLower.includes(term)) return false;
+                    }
+                }
+
+                // Library filter (exclude words from selected and hidden libraries)
+                const allFilteredLibs = new Set([...selectedLibraries, ...hiddenLibraries]);
+                if (allFilteredLibs.size > 0) {
+                    for (const libName of allFilteredLibs) {
+                        if (libraries[libName]) {
+                            for (const word of libraries[libName]) {
+                                if (keywordLower.includes(word.toLowerCase())) return false;
+                            }
+                        }
+                    }
+                }
+
+                // Word count filters
+                if (kw.word_count < filters.min_words || kw.word_count > filters.max_words) return false;
+
+                return true;
+            });
+
+            renderTable(filteredKeywords);
+            updateStats(filteredKeywords.length);
+        };
+
+        // Load libraries on page load
+        loadLibraries();
+
+        // Close modal when clicking outside
+        document.getElementById('libraryModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeLibraryModal();
+            }
+        });
+    </script>
+</body>
+</html>

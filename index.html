@@ -58,6 +58,8 @@
             padding: 24px;
             position: sticky;
             top: 20px;
+            max-height: calc(100vh - 40px);
+            overflow-y: auto;
         }
 
         .panel-section {
@@ -196,7 +198,9 @@
             overflow: hidden;
             display: flex;
             flex-direction: column;
-            max-height: calc(100vh - 120px);
+            position: sticky;
+            top: 20px;
+            max-height: calc(100vh - 40px);
         }
 
         .results-header {

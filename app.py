@@ -114,7 +114,7 @@ class KeywordHarvester:
             'questions': ['how to', 'what is', 'why', 'where', 'can', 'does', 'will']
         }
 
-    def fetch_suggestions_google(self, query: str, max_retries: int = 20, timeout: int = 60) -> tuple:
+    def fetch_suggestions_google(self, query: str, max_retries: int = 20, timeout: int = 10) -> tuple:
         """
         Fetch suggestions from Google Autocomplete API (free) with retry mechanism.
 
@@ -143,6 +143,10 @@ class KeywordHarvester:
                     data = response.json()
                     if len(data) > 1 and isinstance(data[1], list):
                         return data[1], attempt, True
+                    else:
+                        print(f"Unexpected response format for '{query}': {data[:100] if isinstance(data, list) else str(data)[:100]}")
+                else:
+                    print(f"Non-200 status for '{query}': {response.status_code}")
             except requests.exceptions.Timeout:
                 print(f"Timeout (attempt {attempt + 1}/{max_retries}) fetching Google suggestions for '{query}'")
                 if attempt < max_retries - 1:
@@ -163,7 +167,7 @@ class KeywordHarvester:
         print(f"Failed to fetch suggestions for '{query}' after {max_retries} attempts")
         return [], max_retries, False
 
-    def fetch_suggestions_dataforseo(self, query: str, max_retries: int = 20, timeout: int = 60) -> tuple:
+    def fetch_suggestions_dataforseo(self, query: str, max_retries: int = 20, timeout: int = 30) -> tuple:
         """
         Fetch suggestions from DataForSEO API (paid, more reliable) with retry mechanism.
 
@@ -218,6 +222,8 @@ class KeywordHarvester:
                                         items = task.get('result', [{}])[0].get('items', [])
                                         keywords = [item.get('keyword', '') for item in items if item.get('keyword')]
                                         return keywords, attempt, True
+                else:
+                    print(f"DataForSEO non-200/201 status for '{query}': {response.status_code}")
             except requests.exceptions.Timeout:
                 print(f"Timeout (attempt {attempt + 1}/{max_retries}) fetching DataForSEO suggestions for '{query}'")
                 if attempt < max_retries - 1:
@@ -288,27 +294,6 @@ class KeywordHarvester:
 
         return list(queries)
 
-    def fetch_suggestions(self, query: str) -> List[str]:
-        """Fetch autocomplete suggestions for a single query."""
-        try:
-            params = {
-                'client': 'chrome',
-                'q': query,
-                'hl': 'en'  # Language
-            }
-            response = requests.get(
-                GOOGLE_SUGGEST_URL,
-                params=params,
-                timeout=10
-            )
-            if response.status_code == 200:
-                data = response.json()
-                if len(data) > 1 and isinstance(data[1], list):
-                    return data[1]
-        except Exception as e:
-            print(f"Error fetching suggestions for '{query}': {e}")
-        return []
-
     def harvest(self, seed: str, selected_modifiers: Dict[str, bool],
                 progress_callback=None, **kwargs) -> List[Dict[str, str]]:
         """
@@ -323,7 +308,7 @@ class KeywordHarvester:
             if progress_callback:
                 progress_callback(i + 1, len(queries), len(results), query, seed)
 
-            suggestions = self.fetch_suggestions(query, **kwargs)
+            suggestions, _, _ = self.fetch_suggestions(query)
 
             for suggestion in suggestions:
                 # Clean and normalize

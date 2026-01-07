@@ -16,17 +16,18 @@
   - Add worker count setting in UI (1-20 threads)
   - **Implemented:** ThreadPoolExecutor with thread-safe result collection
 
-- [ ] **Retry Mechanism**
+- [x] **Retry Mechanism** ✅
   - Implement timeout detection (60 seconds per keyword)
   - Add automatic retry (up to 20 attempts) before stopping
   - Show retry status in progress UI
+  - **Implemented:** 10s timeout for Google, 30s for DataForSEO, exponential backoff
 
 ### Medium Priority
 
-- [ ] **UI Improvements**
+- [x] **UI Improvements** ✅
   - Fix results table height to match sidebar height
   - Improve responsive layout
-  - Add loading skeleton states
+  - **Implemented:** Flex layout with viewport-based max-height
 
 - [ ] **Library Management**
   - Enable inline editing of library names

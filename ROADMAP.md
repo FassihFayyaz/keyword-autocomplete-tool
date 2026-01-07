@@ -38,11 +38,12 @@
 
 ### Low Priority
 
-- [ ] **Advanced Filtering**
+- [x] **Advanced Filtering** ✅
   - Add duplicate keyword filtering (exact matches)
-  - Add near-duplicate detection (similar keywords)
   - Add special characters filtering options
-  - Add regex-based filtering
+  - **Implemented:** Case-insensitive duplicate removal with Set-based tracking
+  - **Implemented:** Special character filter using regex /[^a-zA-Z0-9\s]/
+  - **Remaining:** Near-duplicate detection, regex-based filtering
 
 ## Enhancement Ideas
 

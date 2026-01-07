@@ -419,80 +419,91 @@ def generate_sse(harvester_instance, seeds: List[str], modifiers: Dict[str, bool
     all_results = []
     global_query_position = 0
 
-    for seed_idx, (seed, queries) in enumerate(all_seed_queries):
-        seen_keywords = set()
+    try:
+        for seed_idx, (seed, queries) in enumerate(all_seed_queries):
+            seen_keywords = set()
 
-        for query_idx, query in enumerate(queries):
-            global_query_position += 1
+            for query_idx, query in enumerate(queries):
+                global_query_position += 1
 
-            # Send progress update BEFORE fetching
-            progress_data = {
-                'type': 'progress',
-                'current': global_query_position,
-                'total': total_queries_all_seeds,
-                'found': len(all_results),
-                'query': query,
+                # Send progress update BEFORE fetching
+                progress_data = {
+                    'type': 'progress',
+                    'current': global_query_position,
+                    'total': total_queries_all_seeds,
+                    'found': len(all_results),
+                    'query': query,
+                    'seed': seed,
+                    'seed_index': seed_idx,
+                    'total_seeds': len(seeds)
+                }
+                yield f"data: {json.dumps(progress_data)}\n\n"
+                sys.stdout.flush()
+
+                # Fetch suggestions for this query
+                suggestions = harvester_instance.fetch_suggestions(query, **kwargs)
+
+                # Collect new keywords from this query
+                new_keywords = []
+                for suggestion in suggestions:
+                    # Clean and normalize
+                    clean_kw = harvester_instance.clean_keyword(suggestion)
+
+                    if clean_kw and clean_kw not in seen_keywords:
+                        seen_keywords.add(clean_kw)
+                        keyword_data = {
+                            'keyword': clean_kw,
+                            'source': query,
+                            'seed': seed,
+                            'char_count': len(clean_kw),
+                            'word_count': len(clean_kw.split())
+                        }
+                        all_results.append(keyword_data)
+                        new_keywords.append(keyword_data)
+
+                # Send new keywords in real-time
+                if new_keywords:
+                    keywords_data = {
+                        'type': 'keywords',
+                        'keywords': new_keywords,
+                        'found': len(all_results),
+                        'query': query,
+                        'seed': seed
+                    }
+                    yield f"data: {json.dumps(keywords_data)}\n\n"
+                    sys.stdout.flush()
+
+                # Rate limiting (only for Google API)
+                if harvester_instance.api_source == 'google' and query_idx < len(queries) - 1:
+                    time.sleep(REQUEST_DELAY)
+
+            # Send completion event for this seed
+            complete_data = {
+                'type': 'seed_complete',
                 'seed': seed,
+                'count': len([k for k in all_results if k['seed'] == seed]),
                 'seed_index': seed_idx,
                 'total_seeds': len(seeds)
             }
-            yield f"data: {json.dumps(progress_data)}\n\n"
-            sys.stdout.flush()
+            yield f"data: {json.dumps(complete_data)}\n\n"
 
-            # Fetch suggestions for this query
-            suggestions = harvester_instance.fetch_suggestions(query, **kwargs)
-
-            # Collect new keywords from this query
-            new_keywords = []
-            for suggestion in suggestions:
-                # Clean and normalize
-                clean_kw = harvester_instance.clean_keyword(suggestion)
-
-                if clean_kw and clean_kw not in seen_keywords:
-                    seen_keywords.add(clean_kw)
-                    keyword_data = {
-                        'keyword': clean_kw,
-                        'source': query,
-                        'seed': seed,
-                        'char_count': len(clean_kw),
-                        'word_count': len(clean_kw.split())
-                    }
-                    all_results.append(keyword_data)
-                    new_keywords.append(keyword_data)
-
-            # Send new keywords in real-time
-            if new_keywords:
-                keywords_data = {
-                    'type': 'keywords',
-                    'keywords': new_keywords,
-                    'found': len(all_results),
-                    'query': query,
-                    'seed': seed
-                }
-                yield f"data: {json.dumps(keywords_data)}\n\n"
-                sys.stdout.flush()
-
-            # Rate limiting (only for Google API)
-            if harvester_instance.api_source == 'google' and query_idx < len(queries) - 1:
-                time.sleep(REQUEST_DELAY)
-
-        # Send completion event for this seed
-        complete_data = {
-            'type': 'seed_complete',
-            'seed': seed,
-            'count': len([k for k in all_results if k['seed'] == seed]),
-            'seed_index': seed_idx,
-            'total_seeds': len(seeds)
+        # Send final completion event
+        final_data = {
+            'type': 'complete',
+            'total': len(all_results),
+            'keywords': all_results
         }
-        yield f"data: {json.dumps(complete_data)}\n\n"
-
-    # Send final completion event
-    final_data = {
-        'type': 'complete',
-        'total': len(all_results),
-        'keywords': all_results
-    }
-    yield f"data: {json.dumps(final_data)}\n\n"
+        yield f"data: {json.dumps(final_data)}\n\n"
+    except GeneratorExit:
+        # Client disconnected
+        print("Client disconnected, stopping harvest")
+    except Exception as e:
+        print(f"Error during harvest: {e}")
+        error_data = {
+            'type': 'error',
+            'message': str(e)
+        }
+        yield f"data: {json.dumps(error_data)}\n\n"
 
 
 @app.route('/api/harvest', methods=['POST'])

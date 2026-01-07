@@ -1139,6 +1139,7 @@
         let filteredKeywords = [];
         let isHarvesting = false;
         let eventSource = null;
+        let abortController = null;
         let seeds = [];
         let seedStatus = {};
         let topics = [];
@@ -1214,6 +1215,7 @@
                 return;
             }
             isHarvesting = true;
+            abortController = new AbortController();
             allKeywords = [];
             filteredKeywords = [];
             seedStatus = {};
@@ -1267,13 +1269,14 @@
                 const response = await fetch('/api/harvest', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(requestData)
+                    body: JSON.stringify(requestData),
+                    signal: abortController.signal
                 });
                 if (!response.ok) throw new Error('Failed to start harvesting');
                 const reader = response.body.getReader();
                 const decoder = new TextDecoder();
                 let buffer = '';
-                while (true) {
+                while (isHarvesting) {
                     const { done, value } = await reader.read();
                     if (done) break;
                     buffer += decoder.decode(value, { stream: true });
@@ -1291,10 +1294,14 @@
                     }
                 }
             } catch (error) {
-                console.error('Error:', error);
-                alert('An error occurred while harvesting keywords');
+                if (error.name === 'AbortError') {
+                    console.log('Harvesting stopped by user');
+                } else {
+                    console.error('Error:', error);
+                    alert('An error occurred while harvesting keywords');
+                }
             } finally {
-                stopHarvesting();
+                if (isHarvesting) stopHarvesting();
             }
         }
 
@@ -1383,6 +1390,10 @@
 
         function stopHarvesting() {
             isHarvesting = false;
+            if (abortController) {
+                abortController.abort();
+                abortController = null;
+            }
             document.getElementById('startBtn').textContent = 'Start Harvesting';
             document.getElementById('statusIndicator').classList.remove('active');
             document.getElementById('currentQueryStatus').style.display = 'none';

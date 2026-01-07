@@ -10,10 +10,11 @@
   - Show live keyword count updates
   - **Also implemented:** Immediate stop/cancellation functionality
 
-- [ ] **Multi-threading / Worker Pool**
+- [x] **Multi-threading / Worker Pool** ✅
   - Add configurable number of workers for parallel processing
   - Make keyword finding as fast as possible
-  - Add worker count setting in UI
+  - Add worker count setting in UI (1-20 threads)
+  - **Implemented:** ThreadPoolExecutor with thread-safe result collection
 
 - [ ] **Retry Mechanism**
   - Implement timeout detection (60 seconds per keyword)

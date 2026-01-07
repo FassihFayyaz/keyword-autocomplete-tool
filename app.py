@@ -10,6 +10,8 @@ import csv
 import io
 import os
 import random
+import threading
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from flask import Flask, request, jsonify, send_from_directory, Response, stream_with_context
 from flask_cors import CORS
 import requests
@@ -396,9 +398,47 @@ def index():
     return send_from_directory('.', 'index.html')
 
 
-def generate_sse(harvester_instance, seeds: List[str], modifiers: Dict[str, bool], **kwargs):
-    """Generate Server-Sent Events for progress updates."""
+def process_single_query(harvester_instance, query, seed, seen_keywords, results_lock):
+    """Process a single query and return results (thread-safe)."""
+    try:
+        suggestions = harvester_instance.fetch_suggestions(query)
+        new_keywords = []
+
+        with results_lock:
+            for suggestion in suggestions:
+                clean_kw = harvester_instance.clean_keyword(suggestion)
+                if clean_kw and clean_kw not in seen_keywords:
+                    seen_keywords.add(clean_kw)
+                    keyword_data = {
+                        'keyword': clean_kw,
+                        'source': query,
+                        'seed': seed,
+                        'char_count': len(clean_kw),
+                        'word_count': len(clean_kw.split())
+                    }
+                    new_keywords.append(keyword_data)
+
+        return {
+            'success': True,
+            'query': query,
+            'seed': seed,
+            'keywords': new_keywords
+        }
+    except Exception as e:
+        return {
+            'success': False,
+            'query': query,
+            'seed': seed,
+            'error': str(e)
+        }
+
+
+def generate_sse(harvester_instance, seeds: List[str], modifiers: Dict[str, bool], workers: int = 1, **kwargs):
+    """Generate Server-Sent Events for progress updates with multi-threading support."""
     import sys
+
+    # Get number of workers from kwargs or default to 1
+    num_workers = max(1, min(workers, 20))  # Limit to max 20 workers
 
     # First, calculate total queries across all seeds for accurate progress tracking
     all_seed_queries = []
@@ -412,76 +452,92 @@ def generate_sse(harvester_instance, seeds: List[str], modifiers: Dict[str, bool
     init_data = {
         'type': 'init',
         'total_queries': total_queries_all_seeds,
-        'total_seeds': len(seeds)
+        'total_seeds': len(seeds),
+        'workers': num_workers
     }
     yield f"data: {json.dumps(init_data)}\n\n"
 
+    # Thread-safe data structures
     all_results = []
-    global_query_position = 0
+    seen_keywords = set()
+    results_lock = threading.Lock()
+    completed_count = {'value': 0}
+    count_lock = threading.Lock()
 
     try:
+        # Flatten all queries into a list with metadata
+        all_queries = []
         for seed_idx, (seed, queries) in enumerate(all_seed_queries):
-            seen_keywords = set()
+            for query in queries:
+                all_queries.append((query, seed, seed_idx, len(queries)))
 
-            for query_idx, query in enumerate(queries):
-                global_query_position += 1
+        # Process queries in parallel using ThreadPoolExecutor
+        with ThreadPoolExecutor(max_workers=num_workers) as executor:
+            # Submit all queries to the executor
+            future_to_query = {
+                executor.submit(process_single_query, harvester_instance, query, seed, seen_keywords, results_lock): (query, seed, seed_idx)
+                for query, seed, seed_idx, _ in all_queries
+            }
 
-                # Send progress update BEFORE fetching
-                progress_data = {
-                    'type': 'progress',
-                    'current': global_query_position,
-                    'total': total_queries_all_seeds,
-                    'found': len(all_results),
-                    'query': query,
-                    'seed': seed,
-                    'seed_index': seed_idx,
-                    'total_seeds': len(seeds)
-                }
-                yield f"data: {json.dumps(progress_data)}\n\n"
-                sys.stdout.flush()
+            # Process results as they complete
+            seed_keyword_counts = {}  # Track keywords per seed
 
-                # Fetch suggestions for this query
-                suggestions = harvester_instance.fetch_suggestions(query, **kwargs)
+            for future in as_completed(future_to_query):
+                query, seed, seed_idx = future_to_query[future]
 
-                # Collect new keywords from this query
-                new_keywords = []
-                for suggestion in suggestions:
-                    # Clean and normalize
-                    clean_kw = harvester_instance.clean_keyword(suggestion)
+                try:
+                    result = future.result(timeout=60)  # 60 second timeout per query
 
-                    if clean_kw and clean_kw not in seen_keywords:
-                        seen_keywords.add(clean_kw)
-                        keyword_data = {
-                            'keyword': clean_kw,
-                            'source': query,
-                            'seed': seed,
-                            'char_count': len(clean_kw),
-                            'word_count': len(clean_kw.split())
-                        }
-                        all_results.append(keyword_data)
-                        new_keywords.append(keyword_data)
+                    with count_lock:
+                        completed_count['value'] += 1
+                        current = completed_count['value']
 
-                # Send new keywords in real-time
-                if new_keywords:
-                    keywords_data = {
-                        'type': 'keywords',
-                        'keywords': new_keywords,
+                    # Send progress update
+                    progress_data = {
+                        'type': 'progress',
+                        'current': current,
+                        'total': total_queries_all_seeds,
                         'found': len(all_results),
                         'query': query,
-                        'seed': seed
+                        'seed': seed,
+                        'seed_index': seed_idx,
+                        'total_seeds': len(seeds)
                     }
-                    yield f"data: {json.dumps(keywords_data)}\n\n"
+                    yield f"data: {json.dumps(progress_data)}\n\n"
                     sys.stdout.flush()
 
-                # Rate limiting (only for Google API)
-                if harvester_instance.api_source == 'google' and query_idx < len(queries) - 1:
-                    time.sleep(REQUEST_DELAY)
+                    if result['success'] and result['keywords']:
+                        with results_lock:
+                            all_results.extend(result['keywords'])
+                            # Track per-seed counts
+                            if seed not in seed_keyword_counts:
+                                seed_keyword_counts[seed] = 0
+                            seed_keyword_counts[seed] += len(result['keywords'])
 
-            # Send completion event for this seed
+                        # Send new keywords in real-time
+                        keywords_data = {
+                            'type': 'keywords',
+                            'keywords': result['keywords'],
+                            'found': len(all_results),
+                            'query': query,
+                            'seed': seed
+                        }
+                        yield f"data: {json.dumps(keywords_data)}\n\n"
+                        sys.stdout.flush()
+
+                    # Rate limiting (only for Google API, reduced delay with threading)
+                    if harvester_instance.api_source == 'google':
+                        time.sleep(REQUEST_DELAY / num_workers)
+
+                except Exception as e:
+                    print(f"Error processing query '{query}': {e}")
+
+        # Send completion events for each seed
+        for seed_idx, (seed, _) in enumerate(all_seed_queries):
             complete_data = {
                 'type': 'seed_complete',
                 'seed': seed,
-                'count': len([k for k in all_results if k['seed'] == seed]),
+                'count': seed_keyword_counts.get(seed, 0),
                 'seed_index': seed_idx,
                 'total_seeds': len(seeds)
             }
@@ -546,8 +602,11 @@ def harvest_keywords():
     # Create harvester with selected API source and proxy setting
     harvester_instance = KeywordHarvester(api_source=api_source, use_proxy=use_proxy)
 
+    # Get number of workers (default to 1 for single-threaded)
+    workers = data.get('workers', 1)
+
     return Response(
-        stream_with_context(generate_sse(harvester_instance, seeds, selected_modifiers)),
+        stream_with_context(generate_sse(harvester_instance, seeds, selected_modifiers, workers=workers)),
         mimetype='text/event-stream',
         headers={
             'Cache-Control': 'no-cache',

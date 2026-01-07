@@ -959,6 +959,24 @@
                 </div>
 
                 <div class="panel-section">
+                    <div class="section-title">Performance</div>
+                    <div class="input-group">
+                        <label for="workersInput" style="color: #a1a1aa; font-size: 0.85rem; display: block; margin-bottom: 8px;">Workers (parallel threads)</label>
+                        <select id="workersInput">
+                            <option value="1">1 (Single-threaded)</option>
+                            <option value="2">2 threads</option>
+                            <option value="3">3 threads</option>
+                            <option value="4">4 threads</option>
+                            <option value="5" selected>5 threads (recommended)</option>
+                            <option value="10">10 threads</option>
+                            <option value="15">15 threads</option>
+                            <option value="20">20 threads (max)</option>
+                        </select>
+                        <div class="input-hint">More workers = faster, but may hit rate limits</div>
+                    </div>
+                </div>
+
+                <div class="panel-section">
                     <div class="section-title">Modifiers</div>
                     <div class="checkbox-group">
                         <div class="checkbox-item">
@@ -1239,7 +1257,7 @@
             document.getElementById('statFound').textContent = '0';
             document.getElementById('statRemaining').textContent = '0';
 
-            // Show active modifiers
+            // Show active modifiers and workers
             const modifiers = getModifiers();
             const activeModifiers = [];
             if (modifiers.alphabet) activeModifiers.push('A-Z');
@@ -1248,6 +1266,10 @@
             if (modifiers.comparisons) activeModifiers.push('Comp');
             if (modifiers.intents) activeModifiers.push('Intent');
             if (modifiers.questions) activeModifiers.push('Quest');
+
+            // Add workers count
+            const workers = parseInt(document.getElementById('workersInput').value) || 5;
+            activeModifiers.push(`${workers} workers`);
 
             const modifiersContainer = document.getElementById('progressModifiers');
             modifiersContainer.innerHTML = '';
@@ -1263,6 +1285,7 @@
                 seeds: seeds.join('\n'),
                 api_source: document.getElementById('apiSource').value,
                 use_proxy: document.getElementById('useProxy').checked,
+                workers: parseInt(document.getElementById('workersInput').value) || 5,
                 ...modifiers
             };
             try {

@@ -31,11 +31,6 @@ GOOGLE_SUGGEST_URL = "http://google.com/complete/search"
 REQUEST_DELAY = float(os.getenv('GOOGLE_REQUEST_DELAY', '0.3'))
 MAX_PARALLEL_REQUESTS = 5
 
-# DataForSEO Configuration from environment variables
-DATAFORSEO_API_URL = "https://api.dataforseo.com/v3/serp/google/autocomplete"
-DATAFORSEO_API_LOGIN = os.getenv('DATAFORSEO_API_LOGIN', '')
-DATAFORSEO_API_PASSWORD = os.getenv('DATAFORSEO_API_PASSWORD', '')
-
 # Proxy Configuration from environment variables
 GOOGLE_HTTP_PROXY = os.getenv('GOOGLE_HTTP_PROXY', '')
 GOOGLE_HTTPS_PROXY = os.getenv('GOOGLE_HTTPS_PROXY', '')
@@ -102,9 +97,8 @@ def get_proxies(use_proxy: bool = True) -> Dict[str, str]:
 class KeywordHarvester:
     """Main class for harvesting keywords from Google Autocomplete."""
 
-    def __init__(self, api_source='google', use_proxy=True):
-        self.api_source = api_source  # 'google' or 'dataforseo'
-        self.use_proxy = use_proxy  # Whether to use proxy for Google requests
+    def __init__(self, use_proxy=True):
+        self.use_proxy = use_proxy  # Whether to use proxy for requests
         self.modifiers = {
             'alphabet': list('abcdefghijklmnopqrstuvwxyz'),
             'numbers': list('0123456789'),
@@ -167,97 +161,13 @@ class KeywordHarvester:
         print(f"Failed to fetch suggestions for '{query}' after {max_retries} attempts")
         return [], max_retries, False
 
-    def fetch_suggestions_dataforseo(self, query: str, max_retries: int = 20, timeout: int = 30) -> tuple:
-        """
-        Fetch suggestions from DataForSEO API (paid, more reliable) with retry mechanism.
-
-        Returns:
-            tuple: (suggestions_list, retry_count, success)
-        """
-        import base64
-        import time as time_module
-
-        if not DATAFORSEO_API_LOGIN or not DATAFORSEO_API_PASSWORD:
-            print("DataForSEO credentials not configured in .env file")
-            return [], 0, False
-
-        for attempt in range(max_retries):
-            try:
-                # Encode credentials to Base64 for Basic Authentication
-                credentials = f"{DATAFORSEO_API_LOGIN}:{DATAFORSEO_API_PASSWORD}"
-                encoded_credentials = base64.b64encode(credentials.encode()).decode()
-
-                headers = {
-                    'Authorization': f'Basic {encoded_credentials}',
-                    'Content-Type': 'application/json'
-                }
-                # Use live advanced endpoint for immediate results
-                payload = [{
-                    'keyword': query,
-                    'language_code': 'en',
-                    'location_code': 2840  # United States
-                }]
-                response = requests.post(
-                    "https://api.dataforseo.com/v3/serp/google/autocomplete/live/advanced",
-                    headers=headers,
-                    json=payload,
-                    timeout=timeout
-                )
-
-                if response.status_code == 200:
-                    data = response.json()
-                    # Check for tasks array with results
-                    if isinstance(data, dict) and 'tasks' in data and len(data['tasks']) > 0:
-                        task = data['tasks'][0]
-                        # Check if task was successful
-                        if task.get('status_code') == 20000 and 'result' in task:
-                            result = task['result']
-                            # Get items from result
-                            if isinstance(result, list) and len(result) > 0:
-                                items = result[0].get('items', [])
-                                keywords = [item.get('keyword', '') for item in items if item.get('keyword')]
-                                return keywords, attempt, True
-                            elif isinstance(result, dict):
-                                items = result.get('items', [])
-                                keywords = [item.get('keyword', '') for item in items if item.get('keyword')]
-                                return keywords, attempt, True
-                    print(f"DataForSEO unexpected response format for '{query}'")
-                elif response.status_code == 401:
-                    print("DataForSEO authentication failed. Check API credentials.")
-                    return [], attempt, False
-                elif response.status_code == 402:
-                    print("DataForSEO payment required. Insufficient API credits.")
-                    return [], attempt, False
-                else:
-                    print(f"DataForSEO status {response.status_code} for '{query}': {response.text[:200]}")
-            except requests.exceptions.Timeout:
-                print(f"Timeout (attempt {attempt + 1}/{max_retries}) fetching DataForSEO suggestions for '{query}'")
-                if attempt < max_retries - 1:
-                    backoff = min(2 ** attempt, 30)
-                    time_module.sleep(backoff)
-            except requests.exceptions.RequestException as e:
-                print(f"Request error (attempt {attempt + 1}/{max_retries}) for '{query}': {e}")
-                if attempt < max_retries - 1:
-                    backoff = min(2 ** attempt, 30)
-                    time_module.sleep(backoff)
-            except Exception as e:
-                print(f"Unexpected error (attempt {attempt + 1}/{max_retries}) for '{query}': {e}")
-                if attempt < max_retries - 1:
-                    backoff = min(2 ** attempt, 30)
-                    time_module.sleep(backoff)
-
-        print(f"Failed to fetch DataForSEO suggestions for '{query}' after {max_retries} attempts")
-        return [], max_retries, False
-
     def fetch_suggestions(self, query: str, **kwargs) -> tuple:
         """
-        Fetch suggestions from the selected API source with retry mechanism.
+        Fetch suggestions from Google Autocomplete with retry mechanism.
 
         Returns:
             tuple: (suggestions_list, retry_count, success)
         """
-        if self.api_source == 'dataforseo':
-            return self.fetch_suggestions_dataforseo(query)
         return self.fetch_suggestions_google(query)
 
     def generate_queries(self, seed: str, selected_modifiers: Dict[str, bool]) -> List[str]:
@@ -330,8 +240,8 @@ class KeywordHarvester:
                         'word_count': len(clean_kw.split())
                     })
 
-            # Rate limiting (only for Google API)
-            if self.api_source == 'google' and i < len(queries) - 1:
+            # Rate limiting
+            if i < len(queries) - 1:
                 time.sleep(REQUEST_DELAY)
 
         return results
@@ -578,9 +488,8 @@ def generate_sse(harvester_instance, seeds: List[str], modifiers: Dict[str, bool
                         yield f"data: {json.dumps(keywords_data)}\n\n"
                         sys.stdout.flush()
 
-                    # Rate limiting (only for Google API, reduced delay with threading)
-                    if harvester_instance.api_source == 'google':
-                        time.sleep(REQUEST_DELAY / num_workers)
+                    # Rate limiting (reduced delay with threading)
+                    time.sleep(REQUEST_DELAY / num_workers)
 
                 except Exception as e:
                     print(f"Error processing query '{query}': {e}")
@@ -639,21 +548,11 @@ def harvest_keywords():
         'questions': data.get('questions', True)
     }
 
-    # API source selection
-    api_source = data.get('api_source', 'google')
-
-    # Proxy setting (only relevant for Google API)
+    # Proxy setting
     use_proxy = data.get('use_proxy', True)
 
-    # Validate DataForSEO credentials if using that source
-    if api_source == 'dataforseo':
-        if not DATAFORSEO_API_LOGIN or not DATAFORSEO_API_PASSWORD:
-            return jsonify({
-                'error': 'DataForSEO credentials not configured. Please add DATAFORSEO_API_LOGIN and DATAFORSEO_API_PASSWORD to your .env file.'
-            }), 400
-
-    # Create harvester with selected API source and proxy setting
-    harvester_instance = KeywordHarvester(api_source=api_source, use_proxy=use_proxy)
+    # Create harvester with proxy setting
+    harvester_instance = KeywordHarvester(use_proxy=use_proxy)
 
     # Get number of workers (default to 1 for single-threaded)
     workers = data.get('workers', 1)

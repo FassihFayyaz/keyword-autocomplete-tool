@@ -1058,7 +1058,7 @@
     <div class="container">
         <header>
             <h1>Keyword Finder by Fassih Fayyaz</h1>
-            <p>Discover long-tail keyword opportunities with Google Autocomplete and DataForSEO</p>
+            <p>Discover long-tail keyword opportunities with Google Autocomplete</p>
         </header>
 
         <div class="main-layout">
@@ -1079,16 +1079,15 @@
                 <div class="panel-section">
                     <div class="section-title">Data Source</div>
                     <div class="input-group">
-                        <select id="apiSource">
-                            <option value="google">Google Autocomplete (Free)</option>
-                            <option value="dataforseo">DataForSEO API (Paid)</option>
-                        </select>
-                        <div class="input-hint" id="apiHint">Free option - rate limited</div>
+                        <div style="padding: 12px; background: #18181b; border: 1px solid #3f3f46; border-radius: 8px; color: #e4e4e7;">
+                            Google Autocomplete (Free)
+                        </div>
+                        <div class="input-hint">Rate limited - use proxy for better performance</div>
                     </div>
-                    <div class="checkbox-group" id="proxyOptions" style="margin-top: 12px;">
+                    <div class="checkbox-group" style="margin-top: 12px;">
                         <div class="checkbox-item">
                             <input type="checkbox" id="useProxy">
-                            <label for="useProxy">Use Proxy (from .env)</label>
+                            <label for="useProxy">Use Proxy</label>
                         </div>
                     </div>
                 </div>
@@ -1320,18 +1319,6 @@
         let totalQueries = 0;
         let completedQueries = 0;
 
-        document.getElementById('apiSource').addEventListener('change', function() {
-            const hint = document.getElementById('apiHint');
-            const proxyOptions = document.getElementById('proxyOptions');
-            if (this.value === 'dataforseo') {
-                hint.textContent = 'Requires credentials in .env file';
-                proxyOptions.style.display = 'none';
-            } else {
-                hint.textContent = 'Free option - rate limited';
-                proxyOptions.style.display = 'flex';
-            }
-        });
-
         function getModifiers() {
             return {
                 alphabet: document.getElementById('alphabetCheck').checked,
@@ -1438,7 +1425,6 @@
             updateSeedList();
             const requestData = {
                 seeds: seeds.join('\n'),
-                api_source: document.getElementById('apiSource').value,
                 use_proxy: document.getElementById('useProxy').checked,
                 workers: parseInt(document.getElementById('workersInput').value) || 5,
                 ...modifiers

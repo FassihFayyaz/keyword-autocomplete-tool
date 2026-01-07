@@ -1,11 +1,11 @@
 # Keyword Autocomplete Tool
 
-A powerful SEO tool for discovering long-tail keyword opportunities by leveraging Google's Autocomplete suggestions and DataForSEO API.
+A powerful SEO tool for discovering long-tail keyword opportunities by leveraging Google's Autocomplete suggestions.
 
 ## Features
 
 ### Core Functionality
-- **Dual API Support**: Google Autocomplete (free, rate-limited) or DataForSEO (paid, reliable)
+- **Google Autocomplete**: Free keyword suggestions from Google
 - **Bulk Seed Processing**: Process multiple seed keywords simultaneously
 - **Real-time Updates**: See keywords appear incrementally while scraping
 - **Multi-threading**: Configurable worker threads (1-20) for faster processing
@@ -54,13 +54,9 @@ A powerful SEO tool for discovering long-tail keyword opportunities by leveragin
 
 3. **Configure (optional)**
 
-   Create `.env` file for DataForSEO or proxy settings:
+   Create `.env` file for proxy settings:
    ```env
-   # DataForSEO (optional - for paid API)
-   DATAFORSEO_API_LOGIN=your_login
-   DATAFORSEO_API_PASSWORD=your_password
-
-   # Proxy for Google API (optional)
+   # Proxy for better performance (optional)
    GOOGLE_HTTP_PROXY=http://proxy.example.com:8080
    GOOGLE_REQUEST_DELAY=0.3
    ```
@@ -80,12 +76,11 @@ A powerful SEO tool for discovering long-tail keyword opportunities by leveragin
 ### Basic Workflow
 
 1. **Enter Seeds**: Type seed keywords (one per line)
-2. **Choose Source**: Google (free) or DataForSEO (paid)
-3. **Select Modifiers**: Enable desired variations
-4. **Set Workers**: Choose thread count (1-20, default 5)
-5. **Start Harvesting**: Click button and watch real-time results
-6. **Filter**: Apply filters to refine results
-7. **Export**: CSV, TXT, or copy to clipboard
+2. **Select Modifiers**: Enable desired variations
+3. **Set Workers**: Choose thread count (1-20, default 5)
+4. **Start Harvesting**: Click button and watch real-time results
+5. **Filter**: Apply filters to refine results
+6. **Export**: CSV, TXT, or copy to clipboard
 
 ### Filter Libraries
 Create reusable exclusion lists:
@@ -122,9 +117,7 @@ Edit libraries directly in the UI:
 |----------|---------|-------------|
 | `FLASK_PORT` | 5000 | Application port |
 | `GOOGLE_REQUEST_DELAY` | 0.3 | Delay between requests (seconds) |
-| `DATAFORSEO_API_LOGIN` | - | DataForSEO login |
-| `DATAFORSEO_API_PASSWORD` | - | DataForSEO password |
-| `GOOGLE_HTTP_PROXY` | - | HTTP proxy for Google API |
+| `GOOGLE_HTTP_PROXY` | - | HTTP proxy for requests |
 
 ### Proxy Setup
 

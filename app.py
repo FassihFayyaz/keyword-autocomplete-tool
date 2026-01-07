@@ -442,19 +442,35 @@ def generate_sse(harvester_instance, seeds: List[str], modifiers: Dict[str, bool
             # Fetch suggestions for this query
             suggestions = harvester_instance.fetch_suggestions(query, **kwargs)
 
+            # Collect new keywords from this query
+            new_keywords = []
             for suggestion in suggestions:
                 # Clean and normalize
                 clean_kw = harvester_instance.clean_keyword(suggestion)
 
                 if clean_kw and clean_kw not in seen_keywords:
                     seen_keywords.add(clean_kw)
-                    all_results.append({
+                    keyword_data = {
                         'keyword': clean_kw,
                         'source': query,
                         'seed': seed,
                         'char_count': len(clean_kw),
                         'word_count': len(clean_kw.split())
-                    })
+                    }
+                    all_results.append(keyword_data)
+                    new_keywords.append(keyword_data)
+
+            # Send new keywords in real-time
+            if new_keywords:
+                keywords_data = {
+                    'type': 'keywords',
+                    'keywords': new_keywords,
+                    'found': len(all_results),
+                    'query': query,
+                    'seed': seed
+                }
+                yield f"data: {json.dumps(keywords_data)}\n\n"
+                sys.stdout.flush()
 
             # Rate limiting (only for Google API)
             if harvester_instance.api_source == 'google' and query_idx < len(queries) - 1:

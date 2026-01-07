@@ -1341,6 +1341,15 @@
                     seedStatus[data.seed_index] = 'active';
                     updateSeedList();
                     break;
+                case 'keywords':
+                    // Append new keywords in real-time
+                    data.keywords.forEach(kw => {
+                        allKeywords.push(kw);
+                    });
+                    filteredKeywords = [...allKeywords];
+                    appendKeywords(data.keywords);
+                    updateStats(data.found);
+                    break;
                 case 'seed_complete':
                     seedStatus[data.seed_index] = 'completed';
                     updateSeedList();
@@ -1348,7 +1357,6 @@
                         `✓ Completed "${data.seed}": ${data.count} keywords found`;
                     break;
                 case 'complete':
-                    allKeywords = data.keywords || [];
                     filteredKeywords = [...allKeywords];
                     renderTable(filteredKeywords);
                     updateStats(filteredKeywords.length);
@@ -1398,6 +1406,26 @@
             } else {
                 document.getElementById('emptyState').style.display = 'none';
             }
+        }
+
+        function appendKeywords(keywords) {
+            const tbody = document.getElementById('resultsBody');
+            document.getElementById('emptyState').style.display = 'none';
+
+            keywords.forEach(kw => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="keyword-col">${escapeHtml(kw.keyword)}</td>
+                    <td class="source-col">${escapeHtml(kw.seed || '-')}</td>
+                    <td class="source-col">${escapeHtml(kw.source)}</td>
+                    <td class="count-col">${kw.word_count}</td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            // Auto-scroll to bottom
+            const tableContainer = document.querySelector('.table-container');
+            tableContainer.scrollTop = tableContainer.scrollHeight;
         }
 
         function updateStats(count) {

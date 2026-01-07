@@ -4,10 +4,11 @@
 
 ### High Priority
 
-- [ ] **Real-time Table Updates**
+- [x] **Real-time Table Updates** ✅
   - Fill keyword table incrementally while scraping
   - Add results as they come in instead of waiting for completion
   - Show live keyword count updates
+  - **Also implemented:** Immediate stop/cancellation functionality
 
 - [ ] **Multi-threading / Worker Pool**
   - Add configurable number of workers for parallel processing

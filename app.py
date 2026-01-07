@@ -191,39 +191,45 @@ class KeywordHarvester:
                     'Authorization': f'Basic {encoded_credentials}',
                     'Content-Type': 'application/json'
                 }
+                # Use live advanced endpoint for immediate results
                 payload = [{
                     'keyword': query,
-                    'language_name': 'English',
+                    'language_code': 'en',
                     'location_code': 2840  # United States
                 }]
                 response = requests.post(
-                    f"{DATAFORSEO_API_URL}/task_post",
+                    "https://api.dataforseo.com/v3/serp/google/autocomplete/live/advanced",
                     headers=headers,
                     json=payload,
                     timeout=timeout
                 )
-                if response.status_code in [200, 201]:
+
+                if response.status_code == 200:
                     data = response.json()
-                    if data.get('tasks') and len(data['tasks']) > 0:
-                        task_id = data['tasks'][0].get('id')
-                        if task_id:
-                            # Get the results
-                            time_module.sleep(2)  # Wait for task to complete
-                            get_response = requests.get(
-                                f"{DATAFORSEO_API_URL}/task_get/{task_id}",
-                                headers=headers,
-                                timeout=timeout
-                            )
-                            if get_response.status_code == 200:
-                                result_data = get_response.json()
-                                if result_data.get('tasks') and len(result_data['tasks']) > 0:
-                                    task = result_data['tasks'][0]
-                                    if task.get('status_code') == 20000:
-                                        items = task.get('result', [{}])[0].get('items', [])
-                                        keywords = [item.get('keyword', '') for item in items if item.get('keyword')]
-                                        return keywords, attempt, True
+                    # Check for tasks array with results
+                    if isinstance(data, dict) and 'tasks' in data and len(data['tasks']) > 0:
+                        task = data['tasks'][0]
+                        # Check if task was successful
+                        if task.get('status_code') == 20000 and 'result' in task:
+                            result = task['result']
+                            # Get items from result
+                            if isinstance(result, list) and len(result) > 0:
+                                items = result[0].get('items', [])
+                                keywords = [item.get('keyword', '') for item in items if item.get('keyword')]
+                                return keywords, attempt, True
+                            elif isinstance(result, dict):
+                                items = result.get('items', [])
+                                keywords = [item.get('keyword', '') for item in items if item.get('keyword')]
+                                return keywords, attempt, True
+                    print(f"DataForSEO unexpected response format for '{query}'")
+                elif response.status_code == 401:
+                    print("DataForSEO authentication failed. Check API credentials.")
+                    return [], attempt, False
+                elif response.status_code == 402:
+                    print("DataForSEO payment required. Insufficient API credits.")
+                    return [], attempt, False
                 else:
-                    print(f"DataForSEO non-200/201 status for '{query}': {response.status_code}")
+                    print(f"DataForSEO status {response.status_code} for '{query}': {response.text[:200]}")
             except requests.exceptions.Timeout:
                 print(f"Timeout (attempt {attempt + 1}/{max_retries}) fetching DataForSEO suggestions for '{query}'")
                 if attempt < max_retries - 1:

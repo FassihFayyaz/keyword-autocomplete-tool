@@ -29,11 +29,12 @@
   - Improve responsive layout
   - **Implemented:** Flex layout with viewport-based max-height
 
-- [ ] **Library Management**
+- [x] **Library Management** ✅
   - Enable inline editing of library names
   - Enable inline editing of library words
   - Add bulk import for libraries
   - Add export for libraries
+  - **Implemented:** Inline editing with Edit/Save/Cancel buttons, textarea for all words
 
 ### Low Priority
 

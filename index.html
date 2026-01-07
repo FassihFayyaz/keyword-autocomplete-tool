@@ -1207,7 +1207,20 @@
                         <label>Max Words:</label>
                         <input type="number" id="maxWords" value="999" min="1">
                     </div>
-                    <button class="btn-apply" onclick="applyFilters()">Apply Filters</button>
+                </div>
+
+                <div class="filter-bar">
+                    <div class="filter-group">
+                        <input type="checkbox" id="removeDuplicates">
+                        <label for="removeDuplicates" style="margin-left: 4px;">Remove Duplicates</label>
+                    </div>
+                    <div class="filter-group">
+                        <input type="checkbox" id="filterSpecialChars" checked>
+                        <label for="filterSpecialChars" style="margin-left: 4px;">Filter Special Characters</label>
+                    </div>
+                    <div class="filter-group" style="margin-left: auto;">
+                        <button class="btn-apply" onclick="applyFilters()">Apply Filters</button>
+                    </div>
                 </div>
 
                 <div class="filter-bar" style="flex-direction: column; align-items: stretch;">
@@ -2167,11 +2180,29 @@
                 include: document.getElementById('includeFilter').value,
                 exclude: document.getElementById('excludeFilter').value,
                 min_words: parseInt(document.getElementById('minWords').value) || 0,
-                max_words: parseInt(document.getElementById('maxWords').value) || 999
+                max_words: parseInt(document.getElementById('maxWords').value) || 999,
+                remove_duplicates: document.getElementById('removeDuplicates').checked,
+                filter_special_chars: document.getElementById('filterSpecialChars').checked
             };
+
+            // Track seen keywords for duplicate detection
+            const seenKeywords = new Set();
 
             filteredKeywords = allKeywords.filter(kw => {
                 const keywordLower = kw.keyword.toLowerCase();
+
+                // Duplicate filter
+                if (filters.remove_duplicates) {
+                    if (seenKeywords.has(keywordLower)) return false;
+                    seenKeywords.add(keywordLower);
+                }
+
+                // Special characters filter - keywords with special chars (non-alphanumeric, non-space)
+                if (filters.filter_special_chars) {
+                    // Check if keyword contains characters other than letters, numbers, and spaces
+                    const hasSpecialChars = /[^a-zA-Z0-9\s]/.test(kw.keyword);
+                    if (hasSpecialChars) return false;
+                }
 
                 // Include filter
                 if (filters.include) {
